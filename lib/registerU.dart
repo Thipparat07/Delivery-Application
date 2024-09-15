@@ -1,7 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart'; // นำเข้า Get
+import 'package:image_picker/image_picker.dart';
+import 'dart:io'; // สำหรับการใช้งาน File
 
-class Registeru extends StatelessWidget {
+class Registeru extends StatefulWidget {
   const Registeru({super.key});
+
+  @override
+  _RegisteruState createState() => _RegisteruState();
+}
+
+class _RegisteruState extends State<Registeru> {
+  File? _image; // ตัวแปรเก็บรูปภาพที่เลือก
+  final _formKey = GlobalKey<FormState>(); // กุญแจสำหรับฟอร์ม
+  bool _isPasswordVisible = false; // สถานะของการแสดงรหัสผ่าน
+  bool _isConfirmPasswordVisible = false; // สถานะของการแสดงยืนยันรหัสผ่าน
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery); // เลือกรูปจากแกลเลอรี่
+
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path); // เก็บ path ของภาพที่เลือก
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,25 +39,22 @@ class Registeru extends StatelessWidget {
             height: 29.32,
           ),
           onPressed: () {
-            Navigator.of(context).pop();
+            Get.back(); // ใช้ Get เพื่อกลับไปยังหน้าก่อนหน้า
           },
         ),
-        // title: const Text('ชื่อหน้าจอ'),
-        // backgroundColor: Colors.blue,
         actions: <Widget>[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Column(
-              mainAxisAlignment:
-                  MainAxisAlignment.center, // จัดตำแหน่งให้ตรงกลางแนวตั้ง
+              mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 Image.asset(
                   'asset/images/logo.png',
-                  width: 81, // ขนาดโลโก้ที่ต้องการ
-                  height: 71, // ขนาดโลโก้ที่ต้องการ
+                  width: 81,
+                  height: 71,
                 ),
                 Transform.translate(
-                  offset: const Offset(0, -15), // ปรับตำแหน่งข้อความตามต้องการ
+                  offset: const Offset(0, -15),
                   child: const Text(
                     'Delivery Application',
                     style: TextStyle(
@@ -47,43 +69,57 @@ class Registeru extends StatelessWidget {
             ),
           ),
         ],
-        toolbarHeight: 92, // ปรับขนาดความสูงของ AppBar
+        toolbarHeight: 92,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(5.0),
         child: Column(
           children: [
-            // เพิ่มไอคอนและข้อความที่นี่
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                IconButton(
-                  icon: Image.asset(
-                    'asset/images/photo_icon.png', // เปลี่ยนเป็น path ของไอคอนที่ต้องการ
-                    width: 40,
-                    height: 40,
-                  ),
-                  onPressed: () {
-                    // ฟังก์ชันที่ใช้สำหรับเพิ่มข้อมูล
-                  },
-                ),
-                Transform.translate(
-                  offset: const Offset(0, -13), // ปรับตำแหน่งข้อความให้เหมาะสม
-                  child: const Text(
-                    'Add Profile Photo', // ข้อความที่ต้องการแสดง
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w300,
-                      color: Colors.black,
+                GestureDetector(
+                  onTap:
+                      _pickImage, // เมื่อกดที่ไอคอนจะเรียกฟังก์ชัน _pickImage
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12), // ขอบมน
+                    child: Container(
+                      width: 100, // กำหนดขนาดตามต้องการ
+                      height: 100,
+                      color: Colors.grey[200], // สีพื้นหลังถ้าไม่มีรูป
+                      child: _image != null
+                          ? Image.file(
+                              _image!,
+                              fit: BoxFit.cover,
+                            )
+                          : Center(
+                              child: Image.asset(
+                                'asset/images/photo_icon.png', // ไอคอนที่จะแสดงถ้าไม่ได้เลือกรูป
+                                width: 40,
+                                height: 40,
+                              ),
+                            ),
                     ),
                   ),
                 ),
+                if (_image == null) // แสดงข้อความเฉพาะเมื่อยังไม่มีรูปที่เลือก
+                  Transform.translate(
+                    offset: const Offset(0, -15),
+                    child: const Text(
+                      'Add Profile Photo',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w300,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
               ],
             ),
-            const SizedBox(height: 10), // เว้นระยะห่างระหว่างไอคอนและฟอร์ม
+            const SizedBox(height: 30),
             Expanded(
               child: Form(
-                // key: _formKey,
+                key: _formKey, // กำหนดกุญแจให้กับฟอร์ม
                 child: ListView(
                   children: [
                     TextFormField(
@@ -114,24 +150,17 @@ class Registeru extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     SizedBox(
-                      width: double
-                          .infinity, // ให้ปุ่มกว้างเต็มความกว้างของ parent
+                      width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
-                          // ฟังก์ชันที่ใช้สำหรับเปลี่ยนหน้า
-                        },
+                        onPressed: () {},
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color(0xFF0C1C8D), // สีพื้นหลังของปุ่ม
+                          backgroundColor: const Color(0xFF0C1C8D),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                                12), // กำหนดความโค้งของมุม
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          padding: EdgeInsets.symmetric(
-                              vertical: 16), // เพิ่ม padding สำหรับปุ่ม
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Image.asset(
@@ -143,9 +172,9 @@ class Registeru extends StatelessWidget {
                             const Text(
                               'GPS Coordinates',
                               style: TextStyle(
-                                color: Colors.grey, // สีตัวอักษรของปุ่ม
-                                fontSize: 16, // ขนาดตัวอักษร
-                                fontWeight: FontWeight.bold, // หนักของตัวอักษร
+                                color: Colors.grey,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ],
@@ -163,17 +192,13 @@ class Registeru extends StatelessWidget {
                         if (value == null || value.isEmpty) {
                           return 'กรุณากรอกเบอร์โทรศัพท์';
                         }
-                        // ตรวจสอบความยาวของเบอร์โทรศัพท์
-                        if (value.length < 10) {
-                          return 'เบอร์โทรศัพท์ต้องมีอย่างน้อย 10 หลัก';
-                        }
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       decoration: const InputDecoration(
-                        labelText: 'Email',
+                        labelText: 'อีเมล',
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.emailAddress,
@@ -181,7 +206,6 @@ class Registeru extends StatelessWidget {
                         if (value == null || value.isEmpty) {
                           return 'กรุณากรอกอีเมล';
                         }
-                        // ใช้ Regular Expression สำหรับตรวจสอบรูปแบบอีเมล
                         final emailRegExp = RegExp(r'^[^@]+@[^@]+\.[^@]+');
                         if (!emailRegExp.hasMatch(value)) {
                           return 'กรุณากรอกอีเมลให้ถูกต้อง';
@@ -191,11 +215,23 @@ class Registeru extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Password',
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _isPasswordVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isPasswordVisible = !_isPasswordVisible;
+                            });
+                          },
+                        ),
                       ),
-                      obscureText: true,
+                      obscureText: !_isPasswordVisible,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'กรุณากรอกรหัสผ่าน';
@@ -205,14 +241,27 @@ class Registeru extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
-                      decoration: const InputDecoration(
-                        labelText: 'Confirm password',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: 'Confirm Password',
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _isConfirmPasswordVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isConfirmPasswordVisible =
+                                  !_isConfirmPasswordVisible;
+                            });
+                          },
+                        ),
                       ),
-                      obscureText: true,
+                      obscureText: !_isConfirmPasswordVisible,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'กรุณายืนยันรหัสผ่าน';
+                          return 'กรุณากรอกยืนยันรหัสผ่าน';
                         }
                         return null;
                       },
@@ -220,26 +269,20 @@ class Registeru extends StatelessWidget {
                     const SizedBox(height: 24),
                     ElevatedButton(
                       onPressed: () {
-                        // if (_formKey.currentState?.validate() ?? false) {
-                        //   // ฟังก์ชันการสมัครสมาชิกเมื่อข้อมูลถูกต้อง
-                        //   ScaffoldMessenger.of(context).showSnackBar(
-                        //     const SnackBar(content: Text('สมัครสมาชิกสำเร็จ')),
-                        //   );
-                        // }
+                        if (_formKey.currentState?.validate() ?? false) {
+                          // ทำสิ่งที่ต้องการเมื่อฟอร์มถูกต้อง
+                        }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            const Color(0xFF0C1C8D), // สีพื้นหลังของปุ่ม
+                        backgroundColor: const Color(0xFF0C1C8D),
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(12), // กำหนดความโค้งของมุม
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 16), // เพิ่ม padding สำหรับปุ่ม
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         textStyle: const TextStyle(
-                          fontSize: 20, // ขนาดฟอนต์
-                          fontWeight: FontWeight.bold, // หนักของตัวอักษร
-                          color: Colors.grey, // สีตัวอักษร
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
                         ),
                       ),
                       child: const Text('Sign up'),

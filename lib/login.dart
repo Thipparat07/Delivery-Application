@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_delivery_1/registerU.dart';
+import 'package:get/get.dart'; // นำเข้า Get
 
-class Login extends StatelessWidget {
+class Login extends StatefulWidget {
   const Login({super.key});
+
+  @override
+  _LoginState createState() => _LoginState();
+}
+
+class _LoginState extends State<Login> {
+  bool _isPasswordVisible = false;
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +23,7 @@ class Login extends StatelessWidget {
             const SizedBox(height: 70),
             Center(
               child: Image.asset(
-                'asset/images/logo.png', // ใส่โลโก้ของคุณใน path นี้
+                'asset/images/logo.png',
                 width: 149,
                 height: 155,
               ),
@@ -31,25 +40,32 @@ class Login extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 30),
-
+            
             // ช่องกรอกอีเมล
-            TextField(
-              decoration: InputDecoration(
+            TextFormField(
+              decoration: const InputDecoration(
                 labelText: 'Email',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(7.0),
-                ),
+                border: OutlineInputBorder(),
               ),
+              keyboardType: TextInputType.emailAddress,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // ช่องกรอกรหัสผ่าน
-            TextField(
-              obscureText: true,
+            TextFormField(
+              obscureText: !_isPasswordVisible,
               decoration: InputDecoration(
                 labelText: 'Password',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(7.0),
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
+                  },
                 ),
               ),
             ),
@@ -58,23 +74,20 @@ class Login extends StatelessWidget {
             // ปุ่ม Sign In
             ElevatedButton(
               onPressed: () {
-                // กำหนดการทำงานเมื่อกดปุ่ม Sign In
+                // การทำงานเมื่อกดปุ่ม Sign In
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0C1C8D), // สีพื้นหลังของปุ่ม
-                foregroundColor: Colors.white, // สีตัวหนังสือของปุ่ม
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 150, vertical: 16),
+                backgroundColor: const Color(0xFF0C1C8D),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 150, vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(7),
                 ),
               ),
               child: const Text('Sign In'),
             ),
-
             const SizedBox(height: 40),
 
-            // ตัวหนังสือ "Or sign in with"
             const Row(
               children: [
                 Expanded(child: Divider()),
@@ -87,7 +100,6 @@ class Login extends StatelessWidget {
             ),
             const SizedBox(height: 60),
 
-            // ปุ่ม Google และ Facebook
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -134,8 +146,8 @@ class Login extends StatelessWidget {
                 ),
               ],
             ),
-
             const SizedBox(height: 80),
+
             // ลิงก์ไปยังหน้าสมัครสมาชิก
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -143,7 +155,7 @@ class Login extends StatelessWidget {
                 const Text("Don't have an account? "),
                 GestureDetector(
                   onTap: () {
-                    // นำทางไปยังหน้าสมัคร
+                    Get.to(const Registeru()); // นำทางไปยังหน้าสมัครสมาชิก
                   },
                   child: const Text(
                     'Sign up',
@@ -161,4 +173,3 @@ class Login extends StatelessWidget {
     );
   }
 }
-
