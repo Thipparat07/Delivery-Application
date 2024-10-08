@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart'; // นำเข้า Get
+import 'package:flutter_delivery_1/login.dart';
+import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io'; // สำหรับการใช้งาน File
+import 'dart:io';
 
-class Registeru extends StatefulWidget {
-  const Registeru({super.key});
+class Registerr extends StatefulWidget {
+  const Registerr({super.key});
 
   @override
-  _RegisteruState createState() => _RegisteruState();
+  _RegisterrState createState() => _RegisterrState();
 }
 
-class _RegisteruState extends State<Registeru> {
+class _RegisterrState extends State<Registerr> {
   File? _image; // ตัวแปรเก็บรูปภาพที่เลือก
   final _formKey = GlobalKey<FormState>(); // กุญแจสำหรับฟอร์ม
   bool _isPasswordVisible = false; // สถานะของการแสดงรหัสผ่าน
@@ -18,11 +19,11 @@ class _RegisteruState extends State<Registeru> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery); // เลือกรูปจากแกลเลอรี่
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
       setState(() {
-        _image = File(pickedFile.path); // เก็บ path ของภาพที่เลือก
+        _image = File(pickedFile.path);
       });
     }
   }
@@ -38,7 +39,7 @@ class _RegisteruState extends State<Registeru> {
             height: 29.32,
           ),
           onPressed: () {
-            Get.back(); // ใช้ Get เพื่อกลับไปยังหน้าก่อนหน้า
+            Get.off(() => const Login()); // ใช้ Get.off() เพื่อนำทางไปยังหน้า Login
           },
         ),
         actions: <Widget>[
@@ -78,13 +79,13 @@ class _RegisteruState extends State<Registeru> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 GestureDetector(
-                  onTap: _pickImage, // เมื่อกดที่ไอคอนจะเรียกฟังก์ชัน _pickImage
+                  onTap: _pickImage,
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12), // ขอบมน
+                    borderRadius: BorderRadius.circular(12),
                     child: Container(
-                      width: 100, // กำหนดขนาดตามต้องการ
+                      width: 100,
                       height: 100,
-                      color: Colors.grey[200], // สีพื้นหลังถ้าไม่มีรูป
+                      color: Colors.grey[200],
                       child: _image != null
                           ? Image.file(
                               _image!,
@@ -92,7 +93,7 @@ class _RegisteruState extends State<Registeru> {
                             )
                           : Center(
                               child: Image.asset(
-                                'asset/images/photo_icon.png', // ไอคอนที่จะแสดงถ้าไม่ได้เลือกรูป
+                                'asset/images/photo_icon.png',
                                 width: 40,
                                 height: 40,
                               ),
@@ -100,7 +101,7 @@ class _RegisteruState extends State<Registeru> {
                     ),
                   ),
                 ),
-                if (_image == null) // แสดงข้อความเฉพาะเมื่อยังไม่มีรูปที่เลือก
+                if (_image == null)
                   Transform.translate(
                     offset: const Offset(0, -15),
                     child: const Text(
@@ -117,7 +118,7 @@ class _RegisteruState extends State<Registeru> {
             const SizedBox(height: 30),
             Expanded(
               child: Form(
-                key: _formKey, // กำหนดกุญแจให้กับฟอร์ม
+                key: _formKey,
                 child: ListView(
                   children: [
                     TextFormField(
@@ -133,60 +134,6 @@ class _RegisteruState extends State<Registeru> {
                       },
                     ),
                     const SizedBox(height: 16),
-
-                    // ช่องกรอกที่อยู่
-                    TextFormField(
-                      decoration: const InputDecoration(
-                        labelText: 'Address',
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLines: 2, // กำหนดให้สามารถกรอกได้หลายบรรทัด
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'กรุณากรอกที่อยู่';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // ปุ่ม GPS Coordinates
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // ฟังก์ชันที่ต้องการเมื่อกดปุ่ม
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0C1C8D),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset(
-                              'asset/images/Gps.png',
-                              width: 24,
-                              height: 24,
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'GPS Coordinates',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
                     TextFormField(
                       decoration: const InputDecoration(
                         labelText: 'Phone',
@@ -272,7 +219,18 @@ class _RegisteruState extends State<Registeru> {
                       },
                     ),
                     const SizedBox(height: 16),
-
+                    TextFormField(
+                      decoration: const InputDecoration(
+                        labelText: 'Vehicle Registration',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'กรุณากรอกหมายเลขทะเบียนรถ';
+                        }
+                        return null;
+                      },
+                    ),
                     const SizedBox(height: 24),
                     ElevatedButton(
                       onPressed: () {

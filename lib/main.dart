@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_delivery_1/app_cover.dart';
 import 'package:flutter_delivery_1/login.dart';
+import 'package:flutter_delivery_1/registerR.dart';
 import 'package:flutter_delivery_1/registerU.dart';
 import 'package:get/get.dart';
+import 'package:flutter_delivery_1/home_page.dart';
+
 
 void main() {
   runApp(const MyApp());
