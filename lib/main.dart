@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_delivery_1/app_cover.dart';
+import 'package:flutter_delivery_1/check_status.dart';
 import 'package:flutter_delivery_1/login.dart';
+import 'package:flutter_delivery_1/profileU.dart';
 import 'package:flutter_delivery_1/registerR.dart';
 import 'package:flutter_delivery_1/registerU.dart';
 import 'package:get/get.dart';
 import 'package:flutter_delivery_1/home_page.dart';
+
 
 
 void main() {
@@ -23,7 +26,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const HomePage(),
+      home: const Profileu(),
     );
   }
 }

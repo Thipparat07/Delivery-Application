@@ -78,6 +78,9 @@ flutter:
     - asset/images/photo_icon.png
     - asset/images/Gps.png
     - asset/images/cover.jpg
+    - asset/images/coke.jpg
+    - asset/images/โปรไฟล์ไรเดอร์.jpg
+    - asset/images/ProfileU.jpg
 
 
   # An image asset can refer to one or more resolution-specific "variants", see
