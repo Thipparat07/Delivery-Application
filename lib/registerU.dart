@@ -17,7 +17,8 @@ import 'dart:convert'; // For JSON access
 import 'package:http_parser/http_parser.dart'; // Import MediaType from http_parser
 
 class Registeru extends StatefulWidget {
-  const Registeru({super.key, required String address});
+  const Registeru({super.key, required String address}) : _address = address;
+  final String _address;
 
   @override
   _RegisteruState createState() => _RegisteruState();
@@ -46,6 +47,7 @@ class _RegisteruState extends State<Registeru> {
       },
     );
     requestLocationPermission();
+    _address = widget._address;
   }
 
   Future<void> _pickImage() async {
@@ -485,7 +487,7 @@ class _RegisteruState extends State<Registeru> {
                               'asset/images/Gps.png',
                               width: 24,
                               height: 24,
-                              color: Colors.white, 
+                              color: Colors.white,
                             ),
                             const SizedBox(width: 8),
                             const Text(
@@ -509,9 +511,7 @@ class _RegisteruState extends State<Registeru> {
                       maxLines: 2, // Allow multiple lines
                       readOnly:
                           true, // Make the field read-only, since the address is fetched automatically
-                      controller: TextEditingController(
-                          text:
-                              _address), // Use a TextEditingController to set the address dynamically
+                      initialValue: _address,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'กรุณากรอกที่อยู่';
@@ -536,7 +536,8 @@ class _RegisteruState extends State<Registeru> {
                             : const Text(
                                 'Sign up',
                                 style: TextStyle(
-                                  fontSize: 16, // ปรับขนาดฟอนต์ที่นี่
+                                  fontSize:
+                                      16, // เปลี่ยนเป็นขนาดฟอนต์ที่เหมาะสม
                                   color: Colors.white, // เปลี่ยนสีฟอนต์
                                   fontWeight: FontWeight
                                       .bold, // ปรับน้ำหนักฟอนต์ตามต้องการ
