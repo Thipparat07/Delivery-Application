@@ -37,6 +37,7 @@ class _RegisteruState extends State<Registeru> {
   String? _phoneNumber; // Variable to store phone number
   Uint8List? _imageBytes; // Variable to store the image bytes
   String url = '';
+  String? _manualAddress; // ตัวแปรเพื่อเก็บที่อยู่ที่กรอกด้วยตนเอง
 
   @override
   void initState() {
@@ -505,7 +506,7 @@ class _RegisteruState extends State<Registeru> {
                     const SizedBox(height: 16),
                     TextFormField(
                       decoration: const InputDecoration(
-                        labelText: 'Address',
+                        labelText: 'Pick up location',
                         border: OutlineInputBorder(),
                       ),
                       maxLines: 2, // Allow multiple lines
@@ -519,6 +520,32 @@ class _RegisteruState extends State<Registeru> {
                         return null;
                       },
                     ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      decoration: const InputDecoration(
+                        labelText: 'Address',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLength:
+                          100, // จำกัดที่ 100 ตัวอักษร (ปรับตามความจำเป็น)
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'กรุณากรอกที่อยู่'; // ต้องกรอก
+                        }
+                        if (value.contains(' ')) {
+                          return 'ห้ามมีช่องว่าง'; // ไม่อนุญาตให้มีช่องว่าง
+                        }
+                        return null;
+                      },
+                      onChanged: (value) {
+                        _manualAddress = value; // เก็บที่อยู่ที่กรอกด้วยตนเอง
+                      },
+                      inputFormatters: [
+                        FilteringTextInputFormatter.deny(
+                            RegExp(r'\s')), // ป้องกันช่องว่าง
+                      ],
+                    ),
+
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
