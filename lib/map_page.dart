@@ -130,7 +130,7 @@ class _MapPageState extends State<MapPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Select Location'),
+        title: const Text('สถานที่รับสินค้า'),
       ),
       body: Column(
         children: [
