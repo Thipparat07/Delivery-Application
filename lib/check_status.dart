@@ -29,7 +29,7 @@ class _CheckStatusState extends State<CheckStatus> {
         Get.to(() => const ());
         break;
       case 3:
-      Get.to(() => const Login()); // ระบุหน้าใหม่ที่นี่
+      Get.to(() => const Login()); 
         break;
     }
   }
