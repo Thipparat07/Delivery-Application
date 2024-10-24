@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_delivery_1/Product.dart';
+import 'package:flutter_delivery_1/addProduct.dart';
 import 'package:flutter_delivery_1/app_cover.dart';
 import 'package:flutter_delivery_1/check_status.dart';
 import 'package:flutter_delivery_1/login.dart';
@@ -29,7 +30,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: ProductListPage(),
+      home: AddProductPage(),
     );
   }
 }

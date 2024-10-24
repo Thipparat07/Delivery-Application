@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:flutter_delivery_1/addProduct.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_delivery_1/model/ProductsDataGetResponse.dart';
@@ -164,6 +165,7 @@ class _ProductListPageState extends State<ProductListPage> {
                   left: 10,
                   child: ElevatedButton(
                     onPressed: () {
+                       Get.to(() => AddProductPage());
                       log('เพิ่มสินค้าที่ต้องจัดส่ง');
                     },
                     style: ElevatedButton.styleFrom(
