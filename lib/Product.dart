@@ -2,11 +2,15 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_delivery_1/SearchReceiver.dart';
-import 'package:flutter_delivery_1/addProduct.dart';
+import 'package:flutter_delivery_1/check_status.dart';
 import 'package:flutter_delivery_1/config/config.dart';
-import 'package:flutter_delivery_1/model/ProductsDataGetResponse.dart';
+import 'package:flutter_delivery_1/home_page.dart';
+import 'package:flutter_delivery_1/profileU.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_delivery_1/model/ProductsDataGetResponse.dart';
+import 'package:flutter_delivery_1/login.dart';
 
 // คอนโทรลเลอร์สำหรับจัดการรายการสินค้า
 class ProductController extends GetxController {
@@ -18,22 +22,28 @@ class ProductController extends GetxController {
   String url = '';
 
   @override
-  void onInit() {
+  void onInit() async {
+    // เปลี่ยนเป็น async
     super.onInit();
-    Configuration.getConfig().then(
-      (config) {
-        url = config['apiEndpoint'];
-      },
-    );
-    fetchProducts(); // ดึงข้อมูลสินค้าตอนที่คอนโทรลเลอร์ถูกสร้างขึ้น
+    try {
+      final config = await Configuration.getConfig();
+      url = config['apiEndpoint'];
+      log('API Endpoint: $url'); // บันทึก endpoint สำหรับการตรวจสอบ
+      fetchProducts(); // ดึงข้อมูลสินค้าหลังจากตั้งค่า URL เสร็จ
+    } catch (e) {
+      log('Error loading configuration: $e');
+      Get.snackbar('Error', 'ไม่สามารถโหลดการกำหนดค่าได้');
+    }
   }
 
   // ฟังก์ชันสำหรับดึงข้อมูลสินค้าจาก API
   Future<void> fetchProducts() async {
+    isLoading.value = true; // เริ่มการโหลด
     try {
-      log(url);
-      final response = await http.get(Uri.parse(
-          'https://api-delivery-application.vercel.app/api/products'));
+      log('Fetching products from: $url/api/products');
+      final response = await http
+          .get(Uri.parse('$url/api/products'))
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         List<dynamic> data = jsonDecode(response.body);
@@ -47,10 +57,10 @@ class ProductController extends GetxController {
         Get.snackbar('Error', 'ไม่สามารถดึงข้อมูลสินค้าได้ กรุณาตรวจสอบข้อมูล');
       }
     } catch (error) {
-      print('เกิดข้อผิดพลาด: $error');
+      log('เกิดข้อผิดพลาด: $error');
       Get.snackbar('Error', 'เกิดข้อผิดพลาดบางอย่าง');
     } finally {
-      isLoading.value = false; // หยุดโหลดเมื่อดึงข้อมูลเสร็จสิ้น
+      isLoading.value = false; // หยุดการโหลด
     }
   }
 
@@ -61,8 +71,8 @@ class ProductController extends GetxController {
     } else {
       selectedProducts.add(product);
     }
-    // แจ้งให้ UI อัพเดตเมื่อสถานะการเลือกเปลี่ยนแปลง
-    selectedProducts.refresh();
+    selectedProducts
+        .refresh(); // แจ้งให้ UI อัพเดตเมื่อสถานะการเลือกเปลี่ยนแปลง
   }
 
   // ฟังก์ชันตรวจสอบว่าสินค้าตัวนี้ถูกเลือกหรือไม่
@@ -72,170 +82,354 @@ class ProductController extends GetxController {
 }
 
 // UI สำหรับแสดงรายการสินค้า
-class ProductListPage extends StatelessWidget {
+class ProductListPage extends StatefulWidget {
+  @override
+  _ProductListPageState createState() => _ProductListPageState();
+}
+
+class _ProductListPageState extends State<ProductListPage> {
   final ProductController productController = Get.put(ProductController());
+  int _selectedIndex = 0; // ดัชนีที่เลือกในแถบเมนู
+  final box = GetStorage();
+  int userId = GetStorage().read('userId');
+  String Name = GetStorage().read('Name');
+  String userType = GetStorage().read('userType');
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index; // เปลี่ยนค่าเมนูที่เลือก
+    });
+
+    // นำทางไปยังหน้าอื่นตามดัชนีที่เลือก
+    switch (index) {
+      case 0:
+        Get.to(() => HomePage()); // หน้าแรก
+        break;
+      case 1:
+        Get.to(() => Profileu()); // หน้าโปรไฟล์
+        break;
+      case 2:
+        Get.to(() => CheckStatus()); // หน้าสถานะการจัดส่ง
+        break;
+      case 3:
+        box.remove('userId'); // ลบ userId
+        box.remove('Name'); // ลบ userId
+        box.remove('userType'); // ลบ userId
+        Get.to(() => const Login()); // หน้าสถานะการจัดส่ง
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('รายการสินค้า'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.check),
-            onPressed: () {
-              final selected = productController.selectedProducts;
-              if (selected.isNotEmpty) {
-                // Send only the IDs to SearchReceiverPage
-                final selectedIds =
-                    selected.map((product) => product.productsId).toList();
-                Get.to(() => SearchReceiverPage(), arguments: selectedIds);
-              } else {
-                Get.snackbar('Error', 'กรุณาเลือกสินค้าก่อน');
-              }
-            },
-          ),
-          ElevatedButton(
-            // กดปุ่มเพื่อเพิ่มสินค้า
-            onPressed: () {
-              Get.to(() => AddProductPage());
-            },
-            child: Text('เพิ่มสินค้า'),
-          ),
-        ],
-      ),
       body: Obx(() {
         if (productController.isLoading.value) {
           return Center(child: CircularProgressIndicator());
         }
 
-        return ListView.builder(
-          itemCount: productController.products.length,
-          itemBuilder: (context, index) {
-            final product = productController.products[index];
-            final isSelected = productController
-                .isSelected(product); // ตรวจสอบว่าสินค้าถูกเลือกหรือไม่
-
-            return Card(
-              elevation: 4,
-              margin: EdgeInsets.all(8),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    // ภาพสินค้า
-                    buildProductImage(product.imageUrl),
-                    SizedBox(width: 8), // เพิ่มระยะห่างระหว่างรูปกับข้อความ
-
-                    // รายละเอียดสินค้า
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(product.name),
-                          Text(product.description),
-                        ],
+        return Column(
+          children: [
+            Stack(
+              children: [
+                Image.asset(
+                  'asset/images/cover.jpg',
+                  width: double.infinity,
+                  height: 300,
+                  fit: BoxFit.cover,
+                ),
+                Positioned(
+                  top: 5,
+                  right: 10,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Image.asset(
+                        'asset/images/logo.png',
+                        width: 91,
+                        height: 81,
+                      ),
+                      const Text(
+                        'Delivery Application',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0A2A5A),
+                          fontFamily: 'Aleo',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'สวัสดี',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const Text(
+                        'Phuri Ngomsaraku', // ชื่อผู้ใช้
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  bottom: 10,
+                  left: 10,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      log('เพิ่มสินค้าที่ต้องจัดส่ง');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      minimumSize: Size(0, 35),
+                      backgroundColor: Colors.white,
+                    ),
+                    child: Text(
+                      'เพิ่มสินค้าที่ต้องจัดส่ง',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-
-                    // กล่องเช็คสำหรับการเลือก
-                    Obx(() => Checkbox(
-                          value: productController.isSelected(
-                              product), // ตั้งค่าสถานะกล่องเช็คตามการเลือกสินค้า
-                          onChanged: (value) {
-                            productController.toggleSelection(
-                                product); // สลับสถานะการเลือกสินค้า
-                          },
-                        )),
-                  ],
+                  ),
                 ),
+                Positioned(
+                  bottom: 10,
+                  right: 10,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // final selected = productController.selectedProducts;
+                      // log('สินค้าที่เลือก: ${selected.map((p) => p.name).join(', ')}');
+                      // log('ID สินค้าที่เลือก: ${selected.map((p) => p.productsId).join(', ')}');
+                      // Get.snackbar('ยืนยันการจัดส่ง',
+                      //     'สินค้าที่เลือกถูกยืนยันเรียบร้อยแล้ว');
+                      final selected = productController.selectedProducts;
+                      if (selected.isNotEmpty) {
+                        // Send only the IDs to SearchReceiverPage
+                        final selectedIds = selected
+                            .map((product) => product.productsId)
+                            .toList();
+                        Get.to(() => SearchReceiverPage(),
+                            arguments: selectedIds);
+                      } else {
+                        Get.snackbar('Error', 'กรุณาเลือกสินค้าก่อน');
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      minimumSize: Size(0, 35),
+                      backgroundColor: Colors.white,
+                    ),
+                    child: Text(
+                      'ยืนยันการจัดส่ง',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Expanded(
+              child: Column(
+                children: [
+                  SizedBox(height: 20),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'รายการสินค้า',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        Obx(() {
+                          return Row(
+                            children: [
+                              Checkbox(
+                                value:
+                                    productController.selectedProducts.length ==
+                                        productController.products.length,
+                                onChanged: (value) {
+                                  if (value == true) {
+                                    productController.selectedProducts
+                                        .assignAll(productController.products);
+                                  } else {
+                                    productController.selectedProducts.clear();
+                                  }
+                                },
+                              ),
+                              const Text(
+                                'เลือกทั้งหมด',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: productController.products.length,
+                      itemBuilder: (context, index) {
+                        final product = productController.products[index];
+                        return Card(
+                          color: const Color(0xFF7FB2FF),
+                          elevation: 4,
+                          child: Container(
+                            width: double.infinity,
+                            height: 100,
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
+                              children: [
+                                Obx(
+                                  () => Checkbox(
+                                    value:
+                                        productController.isSelected(product),
+                                    onChanged: (value) {
+                                      productController
+                                          .toggleSelection(product);
+                                    },
+                                  ),
+                                ),
+                                buildProductImage(product.imageUrl),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Text(
+                                            'ชื่อสินค้า:',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Expanded(
+                                            child: Text(
+                                              product.name,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'รายละเอียด:',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Expanded(
+                                            child: Text(
+                                              product.description,
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
-            );
-          },
+            ),
+          ],
         );
       }),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: const Color(0xFF214FC6),
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white.withOpacity(0.7),
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'หน้าหลัก',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'โปรไฟล์',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.local_shipping),
+            label: 'สถานะการจัดส่ง',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.exit_to_app),
+            label: 'ออกจากระบบ',
+          ),
+        ],
+      ),
     );
   }
 
+  // ฟังก์ชันสร้าง Widget สำหรับแสดงภาพสินค้า
   Widget buildProductImage(String imageUrl) {
-    return Image.network(
-      imageUrl,
-      width: 50,
-      height: 50,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        // เพิ่ม log เพื่อดู error
-        print('Error loading image: $error');
-        return Container(
-          width: 50,
-          height: 50,
-          color: Colors.grey[200],
-          child: Icon(
-            Icons.broken_image,
-            color: Colors.grey[400],
-          ),
-        );
-      },
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Container(
-          width: 50,
-          height: 50,
-          child: Center(
-            child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
-                  : null,
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// UI สำหรับแสดงรายละเอียดสินค้า
-class ProductDetailPage extends StatelessWidget {
-  final ProductsDataGetResponse product;
-
-  ProductDetailPage({required this.product});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: Text(product.name),
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        image: DecorationImage(
+          image: NetworkImage(imageUrl),
+          fit: BoxFit.cover,
         ),
-        body: Container(
-          height: 200, // หรือขนาดที่ต้องการ
-          child: Image.network(
-            product.imageUrl,
-            errorBuilder: (context, error, stackTrace) {
-              print('Error loading detail image: $error');
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.broken_image, size: 50),
-                    SizedBox(height: 8),
-                    Text('ไม่สามารถโหลดรูปภาพได้'),
-                  ],
-                ),
-              );
-            },
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Center(
-                child: CircularProgressIndicator(
-                  value: loadingProgress.expectedTotalBytes != null
-                      ? loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!
-                      : null,
-                ),
-              );
-            },
-          ),
-        ));
+      ),
+    );
   }
 }

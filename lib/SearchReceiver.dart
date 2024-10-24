@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:flutter_delivery_1/model/SearchphoneDataGetResponse.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
 
 class ReceiverController extends GetxController {
-  var receivers = <Map<String, dynamic>>[].obs; // Use a Map to represent the receiver data
+  var receivers = <SearchphoneDataGetResponse>[]
+      .obs; // ใช้ List<SearchphoneDataGetResponse>
   var isLoading = false.obs;
   var searchText = ''.obs;
 
@@ -30,25 +32,36 @@ class ReceiverController extends GetxController {
     isLoading.value = true;
     try {
       final box = GetStorage();
-      final int userId = GetStorage().read('userId');
-      final userID = userId;
-      final response = await http.get(
-        Uri.parse('http://10.0.2.2:3000/api/receivers?phoneNumber=${searchText.value}&userID=$userID'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      );
+      final int userId = box.read('userId'); // Read userId from GetStorage
+      final uri = Uri.parse('http://10.0.2.2:3000/api/receivers')
+          .replace(queryParameters: {
+        'phoneNumber': searchText.value,
+        'userID': userId.toString(),
+      });
+
+      final response = await http.get(uri, headers: {
+        'Content-Type': 'application/json',
+      });
+      log('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
-        List<dynamic> data = jsonDecode(response.body);
-        receivers.value = List<Map<String, dynamic>>.from(data);
-        log('Receivers found: ${receivers.length}');
-      } else {
-        log('Error: ${response.statusCode}');
-        receivers.clear();
+        final decodedData = jsonDecode(response.body);
+        log('Decoded data: $decodedData');
+
+        if (decodedData is List) {
+          // Check if the decoded data is a list
+          receivers.value = decodedData
+              .map((user) => SearchphoneDataGetResponse.fromJson(user))
+              .toList();
+          log('Receivers found: ${receivers.length}');
+        } else {
+          log('No valid user data found');
+          receivers.clear();
+        }
       }
     } catch (error) {
       log('Error searching receiver: $error');
+      Get.snackbar('Error', 'An error occurred while searching for receivers.');
       receivers.clear();
     } finally {
       isLoading.value = false;
@@ -58,15 +71,14 @@ class ReceiverController extends GetxController {
 
 class SearchReceiverPage extends StatelessWidget {
   final TextEditingController _phoneController = TextEditingController();
-  final List<String> selectedIds; // Store selected IDs
+  final List<String> selectedIds;
   final receiverController = Get.put(ReceiverController());
 
   SearchReceiverPage({Key? key})
-      : selectedIds = (Get.arguments is List) // Ensure it's a List
-          ? List<String>.from(Get.arguments.map((id) => id.toString())) // Convert each ID to String
-          : [], // Fallback to an empty list if not
+      : selectedIds = (Get.arguments is List)
+            ? List<String>.from(Get.arguments.map((id) => id.toString()))
+            : [],
         super(key: key) {
-    // Log the selected IDs for debugging
     log('Selected IDs: $selectedIds');
   }
 
@@ -127,15 +139,17 @@ class SearchReceiverPage extends StatelessWidget {
                         leading: const CircleAvatar(
                           child: Icon(Icons.person),
                         ),
-                        title: Text(receiver['Name']),
-                        subtitle: Text(receiver['PhoneNumber']),
+                        title: Text(receiver
+                            .name), // เข้าถึงชื่อผ่านฟิลด์ name ของ User
+                        subtitle: Text(receiver
+                            .phoneNumber), // เข้าถึงเบอร์โทรผ่านฟิลด์ phoneNumber ของ User
                         trailing: const Icon(Icons.arrow_forward_ios),
-                        onTap: () {
-                          Get.toNamed('/order-confirmation', arguments: {
-                            'receiver': receiver,
-                            'selectedIds': selectedIds,
-                          });
-                        },
+                        // onTap: () {
+                        //   Get.toNamed('/order-confirmation', arguments: {
+                        //     'receiver': receiver,
+                        //     'selectedIds': selectedIds,
+                        //   });
+                        // },
                       ),
                     );
                   },
