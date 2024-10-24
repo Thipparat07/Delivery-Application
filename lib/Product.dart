@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_delivery_1/SearchReceiver.dart';
+import 'package:flutter_delivery_1/addProduct.dart';
 import 'package:flutter_delivery_1/check_status.dart';
 import 'package:flutter_delivery_1/config/config.dart';
 import 'package:flutter_delivery_1/home_page.dart';
@@ -96,7 +97,6 @@ class _ProductListPageState extends State<ProductListPage> {
 
   String userType = GetStorage().read('userType');
 
-
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index; // เปลี่ยนค่าเมนูที่เลือก
@@ -122,10 +122,9 @@ class _ProductListPageState extends State<ProductListPage> {
     }
   }
 
- 
   @override
   Widget build(BuildContext context) {
-     log('Building ProductListPage, Name: $Name'); // Log the name to debug
+    log('Building ProductListPage, Name: $Name'); // Log the name to debug
     return Scaffold(
       body: Obx(() {
         if (productController.isLoading.value) {
@@ -193,8 +192,12 @@ class _ProductListPageState extends State<ProductListPage> {
                   bottom: 10,
                   left: 10,
                   child: ElevatedButton(
-                    onPressed: () {
-                      log('เพิ่มสินค้าที่ต้องจัดส่ง');
+                    onPressed: () async {
+                      final result = await Get.to(() => AddProductPage());
+                      if (result == true) {
+                        // หากเพิ่มสินค้าสำเร็จให้รีเฟรชรายการสินค้า
+                        productController.fetchProducts();
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       shape: RoundedRectangleBorder(
