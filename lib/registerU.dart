@@ -82,8 +82,7 @@ class _RegisteruState extends State<Registeru> {
     } else {
       setState(() {
         _address = '';
-        _addressController.text =
-            ''; // อัปเดตคอนโทรลเลอร์
+        _addressController.text = ''; // อัปเดตคอนโทรลเลอร์
       });
     }
   }
@@ -110,18 +109,27 @@ class _RegisteruState extends State<Registeru> {
   }
 
   Future<Position?> _getCurrentLocation() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return null; // GPS not enabled
-    }
+    // ตรวจสอบการอนุญาตสำหรับการเข้าถึงตำแหน่ง
+    PermissionStatus permission = await Permission.location.request();
+    if (permission.isGranted) {
+      // ตรวจสอบว่า location services ถูกเปิดใช้งาน
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        throw Exception('Location services are disabled.');
+      }
 
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      return null; // Permission denied
+      // รับตำแหน่งปัจจุบัน
+      try {
+        return await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+      } catch (e) {
+        log('Error retrieving current location: $e');
+        return null; // ถ้ามีข้อผิดพลาดให้คืนค่า null
+      }
+    } else {
+      // ถ้าผู้ใช้ไม่อนุญาตให้แสดงข้อความ
+      throw Exception('Location permission denied.');
     }
-
-    return await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high); // Get current position
   }
 
   Future<void> _getAddressFromLatLng(LatLng latLng) async {
@@ -165,68 +173,68 @@ class _RegisteruState extends State<Registeru> {
     setState(() => _isLoading = false); // Hide loading
   }
 
-
-Future<void> _register() async {
-  if (_formKey.currentState!.validate()) {
-    setState(() {
-      _isLoading = true; // แสดงสถานะการโหลด
-    });
-
-    // เตรียมคำขอ
-    final uri = Uri.parse('$url/register/users'); // อัปเดตเป็น URL API ของคุณ
-    final request = http.MultipartRequest('POST', uri);
-
-    // เพิ่มฟิลด์ข้อความ
-    request.fields['Name'] = _name ?? ''; // สมมติว่าคุณมีตัวแปร _name
-    request.fields['email'] = _email ?? ''; // อีเมล
-    request.fields['address'] = _manualAddress ?? _address; // ที่อยู่ (ที่กรอกด้วยตนเองหรือที่ดึงมา)
-    request.fields['gpsLocation'] =
-        '${widget.latitude},${widget.longitude}'; // ตำแหน่ง GPS เป็นสตริง
-
-    request.fields['password'] = _password ?? ''; // รหัสผ่าน
-    request.fields['phoneNumber'] = _phoneNumber ?? ''; // หมายเลขโทรศัพท์
-
-    // เพิ่มไฟล์ภาพถ้าถูกเลือก
-    if (_imageBytes != null) {
-      request.files.add(http.MultipartFile.fromBytes(
-        'profilePicture', // คีย์สำหรับไฟล์ภาพ
-        _imageBytes!, // ไบต์ของภาพ
-        filename: _image!.path.split('/').last, // ชื่อไฟล์เดิม
-        contentType: MediaType('image', 'jpeg'), // ตั้งค่าประเภทเนื้อหาสำหรับภาพ
-      ));
-    }
-
-    try {
-      final response = await request.send(); // ส่งคำขอ
-
-      // จัดการกับการตอบกลับ
-      if (response.statusCode == 201) {
-        // ตรวจสอบว่าการลงทะเบียนสำเร็จหรือไม่
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("ลงทะเบียนสำเร็จ")),
-        );
-        Get.to(() => Login());
-      } else {
-        final responseData = await response.stream.bytesToString(); // รับข้อมูลการตอบกลับ
-        log(responseData);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("เกิดข้อผิดพลาด: $responseData")),
-        );
-      }
-    } catch (e) {
-      // จัดการข้อยกเว้น
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์")),
-      );
-    } finally {
+  Future<void> _register() async {
+    if (_formKey.currentState!.validate()) {
       setState(() {
-        _isLoading = false; // ซ่อนสถานะการโหลด
+        _isLoading = true; // แสดงสถานะการโหลด
       });
+
+      // เตรียมคำขอ
+      final uri = Uri.parse('$url/register/users'); // อัปเดตเป็น URL API ของคุณ
+      final request = http.MultipartRequest('POST', uri);
+
+      // เพิ่มฟิลด์ข้อความ
+      request.fields['Name'] = _name ?? ''; // สมมติว่าคุณมีตัวแปร _name
+      request.fields['email'] = _email ?? ''; // อีเมล
+      request.fields['address'] =
+          _manualAddress ?? ''; // ที่อยู่ (ที่กรอกด้วยตนเองหรือที่ดึงมา)
+      request.fields['gpsLocation'] =
+          '${widget.latitude},${widget.longitude}'; // ตำแหน่ง GPS เป็นสตริง
+
+      request.fields['password'] = _password ?? ''; // รหัสผ่าน
+      request.fields['phoneNumber'] = _phoneNumber ?? ''; // หมายเลขโทรศัพท์
+
+      // เพิ่มไฟล์ภาพถ้าถูกเลือก
+      if (_imageBytes != null) {
+        request.files.add(http.MultipartFile.fromBytes(
+          'profilePicture', // คีย์สำหรับไฟล์ภาพ
+          _imageBytes!, // ไบต์ของภาพ
+          filename: _image!.path.split('/').last, // ชื่อไฟล์เดิม
+          contentType:
+              MediaType('image', 'jpeg'), // ตั้งค่าประเภทเนื้อหาสำหรับภาพ
+        ));
+      }
+
+      try {
+        final response = await request.send(); // ส่งคำขอ
+
+        // จัดการกับการตอบกลับ
+        if (response.statusCode == 201) {
+          // ตรวจสอบว่าการลงทะเบียนสำเร็จหรือไม่
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("ลงทะเบียนสำเร็จ")),
+          );
+          Get.to(() => Login());
+        } else {
+          final responseData =
+              await response.stream.bytesToString(); // รับข้อมูลการตอบกลับ
+          log(responseData);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("เกิดข้อผิดพลาด: $responseData")),
+          );
+        }
+      } catch (e) {
+        // จัดการข้อยกเว้น
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์")),
+        );
+      } finally {
+        setState(() {
+          _isLoading = false; // ซ่อนสถานะการโหลด
+        });
+      }
     }
   }
-}
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -496,43 +504,50 @@ Future<void> _register() async {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () async {
-                          // Show loading indicator
+                          // แสดง indicator โหลด
                           showDialog(
                             context: context,
                             barrierDismissible: false,
                             builder: (BuildContext context) {
                               return const Center(
-                                child:
-                                    CircularProgressIndicator(), // Loading spinner
+                                child: CircularProgressIndicator(),
                               );
                             },
                           );
 
-                          // Get current location
-                          Position? currentPosition =
-                              await _getCurrentLocation();
+                          try {
+                            // รับตำแหน่งปัจจุบัน
+                            Position? currentPosition =
+                                await _getCurrentLocation();
 
-                          // Close loading dialog
-                          Navigator.of(context).pop();
+                            // ปิด dialog โหลด
+                            Navigator.of(context).pop();
 
-                          if (currentPosition != null) {
-                            final LatLng? selectedPosition =
-                                await Get.to(() => MapPage(
-                                      latitude: currentPosition.latitude,
-                                      longitude: currentPosition.longitude,
-                                    ));
+                            if (currentPosition != null) {
+                              final LatLng? selectedPosition =
+                                  await Get.to(() => MapPage(
+                                        latitude: currentPosition.latitude,
+                                        longitude: currentPosition.longitude,
+                                      ));
 
-                            if (selectedPosition != null) {
-                              await _getAddressFromLatLng(
-                                  selectedPosition); // Get the address from selected coordinates
-                              log('Address: $_address');
+                              if (selectedPosition != null) {
+                                await _getAddressFromLatLng(selectedPosition);
+                                log('Address: $_address');
+                              }
+                            } else {
+                              throw Exception('Current position is null');
                             }
-                          } else {
+                          } catch (e) {
+                            // ปิด dialog โหลด ในกรณีที่มีข้อผิดพลาด
+                            Navigator.of(context).pop();
+
+                            // แสดงข้อความแสดงข้อผิดพลาด
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content:
-                                      Text("ไม่สามารถดึงตำแหน่งปัจจุบันได้")),
+                              SnackBar(
+                                  content: Text(
+                                      e.toString())), // แสดงข้อความข้อผิดพลาด
                             );
+                            log('Error fetching location: $e'); // บันทึกข้อผิดพลาด
                           }
                         },
                         style: ElevatedButton.styleFrom(

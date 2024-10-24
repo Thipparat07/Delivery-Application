@@ -43,92 +43,97 @@ class _MapPageState extends State<MapPage> {
   }
 
   void _onMapTapped(LatLng position) {
-    setState(() {
-      selectedPosition = position; // Update selected position
-    });
-    _updateAddress(position); // Convert coordinates to address
-    log('Selected position: $position'); // Log the selected position
+    log('Tapped position: $position'); // Log tapped position
+    // No immediate update to selectedPosition or selectedAddress
   }
 
- void _showAddressPopup() {
-  showModalBottomSheet(
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(
-        top: Radius.circular(30.0),
-      ),
-    ),
-    builder: (BuildContext context) {
-      return Container(
-        height: 240,
-        decoration: const BoxDecoration(
-          color: Color(0xFF214FC6),
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(30.0),
-          ),
+  void _confirmSelection() {
+    setState(() {
+      selectedPosition = selectedPosition; // Keep the selected position
+      // Update address based on the currently selected position
+      _updateAddress(selectedPosition);
+    });
+    log('Confirmed position: $selectedPosition');
+    _showAddressPopup();
+  }
+
+  void _showAddressPopup() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(30.0),
         ),
-        child: Column(
-          children: [
-            Align(
-              alignment: Alignment.topLeft,
-              child: Container(
-                margin: const EdgeInsets.all(16.0),
-                child: const Text(
-                  'ตรวจสอบที่อยู่จัดส่งคุณอีกครั้ง',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+      ),
+      builder: (BuildContext context) {
+        return Container(
+          height: 240,
+          decoration: const BoxDecoration(
+            color: Color(0xFF214FC6),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(30.0),
+            ),
+          ),
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.topLeft,
+                child: Container(
+                  margin: const EdgeInsets.all(16.0),
+                  child: const Text(
+                    'ตรวจสอบที่อยู่จัดส่งคุณอีกครั้ง',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
-            ),
-            Expanded(
-              child: Center(
-                child: Text(
-                  selectedAddress.isNotEmpty
-                      ? selectedAddress
-                      : 'Tap on the map to select an address',
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                  textAlign: TextAlign.center,
+              Expanded(
+                child: Center(
+                  child: Text(
+                    selectedAddress.isNotEmpty
+                        ? selectedAddress
+                        : 'Tap on the map to select an address',
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: ElevatedButton(
-                onPressed: () {
-                  log('Selected position: ${selectedPosition.latitude}, ${selectedPosition.longitude}');
-                  Get.to(() => Registeru(
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: ElevatedButton(
+                  onPressed: () {
+                    log('Selected position: ${selectedPosition.latitude}, ${selectedPosition.longitude}');
+                    Get.to(() => Registeru(
                       latitude: selectedPosition.latitude,
                       longitude: selectedPosition.longitude,
-                  )); // Pass position instead of address
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 12.0, horizontal: 75.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    )); // Pass position instead of address
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12.0, horizontal: 75.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
                   ),
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
-                ),
-                child: const Text(
-                  'ยืนยันที่อยู่จัดส่ง',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
+                  child: const Text(
+                    'ยืนยันที่อยู่จัดส่ง',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
-
-
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +155,7 @@ class _MapPageState extends State<MapPage> {
                   position: selectedPosition,
                 ),
               },
-              onTap: _onMapTapped,
+              onTap: _onMapTapped, // Only log tapped position
             ),
           ),
           Container(
@@ -178,7 +183,7 @@ class _MapPageState extends State<MapPage> {
                 const SizedBox(height: 10),
                 Center(
                   child: ElevatedButton(
-                    onPressed: _showAddressPopup, // Show popup on button press
+                    onPressed: _confirmSelection, // Confirm selection and show popup
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                           vertical: 12.0, horizontal: 75.0),
