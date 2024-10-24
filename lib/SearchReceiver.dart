@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 class SearchReceiverPage extends StatelessWidget {
   final TextEditingController _phoneController = TextEditingController();
   final ProductController productController = Get.put(ProductController());
+  
 
   @override
   Widget build(BuildContext context) {

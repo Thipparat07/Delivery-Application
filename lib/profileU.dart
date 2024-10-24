@@ -1,6 +1,9 @@
 import 'dart:convert'; // นำเข้าเพื่อแปลงข้อมูล JSON
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:flutter_delivery_1/check_status.dart';
+import 'package:flutter_delivery_1/home_page.dart';
+import 'package:flutter_delivery_1/login.dart';
 import 'package:flutter_delivery_1/model/UesrsDataGetResponse.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -14,6 +17,8 @@ class Profileu extends StatefulWidget {
 }
 
 class _ProfileuState extends State<Profileu> {
+  int _selectedIndex = 1; // ใช้เพื่อเก็บค่าของเมนูที่เลือก
+  final box = GetStorage();
   @override
   void initState() {
     super.initState();
@@ -21,11 +26,36 @@ class _ProfileuState extends State<Profileu> {
     fetchUserData();
   }
 
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index; // เปลี่ยนค่าเมนูที่เลือก
+    });
+
+    // นำทางไปยังหน้าอื่นตามดัชนีที่เลือก
+    switch (index) {
+      case 0:
+        Get.to(() => HomePage()); // หน้าแรก
+        break;
+      case 1:
+        Get.to(() => Profileu()); // หน้าโปรไฟล์
+        break;
+      case 2:
+        Get.to(() => CheckStatus()); // หน้าสถานะการจัดส่ง
+        break;
+      case 3:
+        box.remove('userId'); // ลบ userId
+        box.remove('Name'); // ลบ userId
+        box.remove('userType'); // ลบ userId
+        Get.to(() => const Login()); // หน้าสถานะการจัดส่ง
+        break;
+    }
+  }
+
   // ฟังก์ชันดึงข้อมูลผู้ใช้จาก API
   Future<UesrsDataGetResponse> fetchUserData() async {
     int userId = GetStorage().read('userId');
     final response =
-        await http.get(Uri.parse('http://10.0.2.2:3000/users/$userId'));
+        await http.get(Uri.parse('http://10.0.2.2:3000/Users/$userId'));
 
     if (response.statusCode == 200) {
       return uesrsDataGetResponseFromJson(response.body);
@@ -96,22 +126,35 @@ class _ProfileuState extends State<Profileu> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(7),
-                    child: Image.network(
-                      user.profilePicture,
-                      width: 113,
-                      height: 113,
-                      fit: BoxFit.cover,
-                      errorBuilder: (BuildContext context, Object error,
-                          StackTrace? stackTrace) {
-                        return Container(
-                          width: 113,
-                          height: 113,
-                          color: Colors.grey[200],
-                          child: const Icon(
-                              Icons.error), // แสดงไอคอนเมื่อโหลดภาพล้มเหลว
-                        );
-                      },
-                    ),
+                    child: user.profilePicture != null &&
+                            user.profilePicture.isNotEmpty
+                        ? Image.network(
+                            user.profilePicture!,
+                            width: 113,
+                            height: 113,
+                            fit: BoxFit.cover,
+                            errorBuilder: (BuildContext context, Object error,
+                                StackTrace? stackTrace) {
+                              return Container(
+                                width: 113,
+                                height: 113,
+                                color: Colors.grey[200],
+                                child: const Icon(
+                                  Icons.error,
+                                  color: Colors.red,
+                                ), // แสดงไอคอนเมื่อโหลดภาพล้มเหลว
+                              );
+                            },
+                          )
+                        : Container(
+                            width: 113,
+                            height: 113,
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: Text(
+                                  'ไม่มีรูปโปร'), // แสดงข้อความเมื่อไม่มีรูปภาพ
+                            ),
+                          ),
                   ),
                   const SizedBox(height: 16),
                   _buildInfoContainer(user.name),
@@ -127,17 +170,31 @@ class _ProfileuState extends State<Profileu> {
           }
         },
       ),
-      bottomNavigationBar: BottomAppBar(
-        color: const Color(0xFF214FC6),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _bottomNavItem(Icons.home, 'หน้าหลัก', 0),
-            _bottomNavItem(Icons.person, 'โปรไฟล์', 1),
-            _bottomNavItem(Icons.local_shipping, 'สถานะการจัดส่ง', 2),
-            _bottomNavItem(Icons.exit_to_app, 'ออกจากระบบ', 3),
-          ],
-        ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: const Color(0xFF214FC6),
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white.withOpacity(0.7),
+        currentIndex: _selectedIndex, // เก็บสถานะเมนูที่ถูกเลือก
+        onTap: _onItemTapped, // เรียกใช้ฟังก์ชันเมื่อเลือกเมนู
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'หน้าหลัก',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'โปรไฟล์',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.local_shipping),
+            label: 'สถานะการจัดส่ง',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.exit_to_app),
+            label: 'ออกจากระบบ',
+          ),
+        ],
       ),
     );
   }

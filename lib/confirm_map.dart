@@ -1,21 +1,22 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'package:flutter_delivery_1/registerU.dart';
+import 'package:flutter_delivery_1/home_page.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:get/get.dart';
 import 'package:geocoding/geocoding.dart';
 
-class MapPage extends StatefulWidget {
+class ConfirmMap extends StatefulWidget {
   final double latitude;
   final double longitude;
 
-  const MapPage({super.key, required this.latitude, required this.longitude});
+  const ConfirmMap(
+      {super.key, required this.latitude, required this.longitude});
 
   @override
-  _MapPageState createState() => _MapPageState();
+  _ConfirmMapState createState() => _ConfirmMapState();
 }
 
-class _MapPageState extends State<MapPage> {
+class _ConfirmMapState extends State<ConfirmMap> {
   late GoogleMapController mapController; // Google Map controller
   late LatLng selectedPosition; // Selected position
   String selectedAddress = ''; // Selected address
@@ -50,85 +51,84 @@ class _MapPageState extends State<MapPage> {
     log('Selected position: $position'); // Log the selected position
   }
 
- void _showAddressPopup() {
-  showModalBottomSheet(
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(
-        top: Radius.circular(30.0),
+  void _sendLocation() {
+    log('Selected Address: $selectedAddress'); // Log the selected address
+    Get.to(HomePage()); // Send the address back instead of the position
+  }
+
+  void _showAddressPopup() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(30.0),
+        ),
       ),
-    ),
-    builder: (BuildContext context) {
-      return Container(
-        height: 240,
-        decoration: const BoxDecoration(
-          color: Color(0xFF214FC6),
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(30.0),
+      builder: (BuildContext context) {
+        return Container(
+          height: 240, 
+          decoration: const BoxDecoration(
+            color: Color(0xFF214FC6),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(30.0),
+            ),
           ),
-        ),
-        child: Column(
-          children: [
-            Align(
-              alignment: Alignment.topLeft,
-              child: Container(
-                margin: const EdgeInsets.all(16.0),
-                child: const Text(
-                  'ตรวจสอบที่อยู่จัดส่งคุณอีกครั้ง',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.topLeft,
+                child: Container(
+                  margin: const EdgeInsets.all(16.0),
+                  child: const Text(
+                    'ตรวจสอบที่อยู่จัดส่งคุณอีกครั้ง',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
-            ),
-            Expanded(
-              child: Center(
-                child: Text(
-                  selectedAddress.isNotEmpty
-                      ? selectedAddress
-                      : 'Tap on the map to select an address',
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: ElevatedButton(
-                onPressed: () {
-                  log('Selected position: ${selectedPosition.latitude}, ${selectedPosition.longitude}');
-                  Get.to(() => Registeru(
-                      latitude: selectedPosition.latitude,
-                      longitude: selectedPosition.longitude,
-                  )); // Pass position instead of address
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 12.0, horizontal: 75.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
-                ),
-                child: const Text(
-                  'ยืนยันที่อยู่จัดส่ง',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
+              Expanded(
+                child: Center(
+                  child: Text(
+                    selectedAddress.isNotEmpty
+                        ? selectedAddress
+                        : 'Tap on the map to select an address',
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
-
-
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: ElevatedButton(
+                  onPressed: () {
+                    _sendLocation(); // เรียกฟังก์ชันยืนยันที่อยู่ หรือทำการส่งตำแหน่งกลับ
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 12.0, horizontal: 75.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                  ),
+                  child: const Text(
+                    'ยืนยันที่อยู่จัดส่ง',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -178,20 +178,20 @@ class _MapPageState extends State<MapPage> {
                 const SizedBox(height: 10),
                 Center(
                   child: ElevatedButton(
-                    onPressed: _showAddressPopup, // Show popup on button press
+                    onPressed: _showAddressPopup,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
-                          vertical: 12.0, horizontal: 75.0),
-                      backgroundColor: Color(0xFF0C1C8D),
+                          vertical: 12.0, horizontal: 75.0), 
+                      backgroundColor: Color(0xFF0C1C8D), 
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(10), 
                       ),
                     ),
                     child: const Text(
                       'แสดงที่อยู่จัดส่ง',
                       style: TextStyle(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.bold, 
                       ),
                     ),
                   ),

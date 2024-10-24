@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_delivery_1/addProduct.dart';
+import 'package:flutter_delivery_1/config/config.dart';
 import 'package:flutter_delivery_1/model/ProductsDataGetResponse.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
@@ -12,18 +13,25 @@ class ProductController extends GetxController {
   var isLoading = true.obs; // สถานะการโหลดที่เป็น Observable
   var selectedProducts =
       <ProductsDataGetResponse>[].obs; // รายการสินค้าที่เลือกเป็น Observable
+  String url = '';
 
   @override
   void onInit() {
     super.onInit();
+    Configuration.getConfig().then(
+      (config) {
+        url = config['apiEndpoint'];
+      },
+    );
     fetchProducts(); // ดึงข้อมูลสินค้าตอนที่คอนโทรลเลอร์ถูกสร้างขึ้น
   }
 
   // ฟังก์ชันสำหรับดึงข้อมูลสินค้าจาก API
   Future<void> fetchProducts() async {
     try {
+      log(url);
       final response =
-          await http.get(Uri.parse('http://10.0.2.2:3000/api/products'));
+          await http.get(Uri.parse('https://api-delivery-application.vercel.app/api/products'));
 
       if (response.statusCode == 200) {
         List<dynamic> data = jsonDecode(response.body);
@@ -186,3 +194,5 @@ class ProductDetailPage extends StatelessWidget {
     );
   }
 }
+
+

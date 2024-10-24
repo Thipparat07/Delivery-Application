@@ -341,8 +341,9 @@ class _LoginState extends State<Login> {
                                       // ปุ่มสำหรับ User
                                       ElevatedButton(
                                         onPressed: () {
-                                          Get.to(
-                                              const Registeru()); // นำทางไปยังหน้าสมัคร User
+                                          // Navigate to Registeru with null latitude and longitude
+                                          Get.to(Registeru(
+                                              latitude: null, longitude: null));
                                         },
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.white,

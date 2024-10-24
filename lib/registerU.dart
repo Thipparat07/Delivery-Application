@@ -17,7 +17,10 @@ import 'dart:convert'; // For JSON access
 import 'package:http_parser/http_parser.dart'; // Import MediaType from http_parser
 
 class Registeru extends StatefulWidget {
-  const Registeru({super.key});
+  final double? latitude; // Change to double?
+  final double? longitude; // Change to double?
+
+  const Registeru({Key? key, this.latitude, this.longitude}) : super(key: key);
 
   @override
   _RegisteruState createState() => _RegisteruState();
@@ -28,7 +31,9 @@ class _RegisteruState extends State<Registeru> {
   final _formKey = GlobalKey<FormState>(); // Key for the form
   bool _isPasswordVisible = false; // Password visibility status
   bool _isConfirmPasswordVisible = false; // Confirm password visibility status
-  String? _address; // Variable to store address
+  final TextEditingController _addressController =
+      TextEditingController(); // คอนโทรลเลอร์สำหรับที่อยู่
+  String _address = 'กำลังดึงที่อยู่...'; // ที่อยู่เริ่มต้น
   bool _isLoading = false; // Variable for loading status
   String? _email; // Variable to store email
   String? _name; // Variable to store name
@@ -36,6 +41,7 @@ class _RegisteruState extends State<Registeru> {
   String? _phoneNumber; // Variable to store phone number
   Uint8List? _imageBytes; // Variable to store the image bytes
   String url = '';
+  String? _manualAddress; // ตัวแปรเพื่อเก็บที่อยู่ที่กรอกด้วยตนเอง
 
   @override
   void initState() {
@@ -45,7 +51,47 @@ class _RegisteruState extends State<Registeru> {
         url = config['apiEndpoint'];
       },
     );
-    requestLocationPermission();
+    _convertLatLngToAddress();
+  }
+
+//แปลงที่อยู่เป็นAddress
+  Future<void> _convertLatLngToAddress() async {
+    if (widget.latitude != null && widget.longitude != null) {
+      try {
+        // ดึงที่อยู่จากละติจูดและลองจิจูด
+        List<Placemark> placemarks =
+            await placemarkFromCoordinates(widget.latitude!, widget.longitude!);
+        Placemark place = placemarks[0];
+
+        // สร้างสตริงที่อยู่
+        String fetchedAddress =
+            '${place.street}, ${place.locality}, ${place.country}';
+
+        // อัปเดตที่อยู่ในคอนโทรลเลอร์
+        setState(() {
+          _address = fetchedAddress; // อัปเดตสถานะภายใน
+          _addressController.text = fetchedAddress; // อัปเดตคอนโทรลเลอร์
+        });
+      } catch (e) {
+        setState(() {
+          _address = 'ไม่สามารถดึงที่อยู่ได้';
+          _addressController.text =
+              'ไม่สามารถดึงที่อยู่ได้'; // อัปเดตคอนโทรลเลอร์เมื่อเกิดข้อผิดพลาด
+        });
+      }
+    } else {
+      setState(() {
+        _address = '';
+        _addressController.text =
+            ''; // อัปเดตคอนโทรลเลอร์
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _addressController.dispose(); // ปล่อยคอนโทรลเลอร์เมื่อไม่ใช้งาน
+    super.dispose();
   }
 
   Future<void> _pickImage() async {
@@ -119,75 +165,68 @@ class _RegisteruState extends State<Registeru> {
     setState(() => _isLoading = false); // Hide loading
   }
 
-  Future<void> requestLocationPermission() async {
-    PermissionStatus status = await Permission.location.request();
 
-    if (status.isGranted) {
-      print('Location permission granted');
-    } else if (status.isDenied) {
-      print('Location permission denied');
+Future<void> _register() async {
+  if (_formKey.currentState!.validate()) {
+    setState(() {
+      _isLoading = true; // แสดงสถานะการโหลด
+    });
+
+    // เตรียมคำขอ
+    final uri = Uri.parse('$url/register/users'); // อัปเดตเป็น URL API ของคุณ
+    final request = http.MultipartRequest('POST', uri);
+
+    // เพิ่มฟิลด์ข้อความ
+    request.fields['Name'] = _name ?? ''; // สมมติว่าคุณมีตัวแปร _name
+    request.fields['email'] = _email ?? ''; // อีเมล
+    request.fields['address'] = _manualAddress ?? _address; // ที่อยู่ (ที่กรอกด้วยตนเองหรือที่ดึงมา)
+    request.fields['gpsLocation'] =
+        '${widget.latitude},${widget.longitude}'; // ตำแหน่ง GPS เป็นสตริง
+
+    request.fields['password'] = _password ?? ''; // รหัสผ่าน
+    request.fields['phoneNumber'] = _phoneNumber ?? ''; // หมายเลขโทรศัพท์
+
+    // เพิ่มไฟล์ภาพถ้าถูกเลือก
+    if (_imageBytes != null) {
+      request.files.add(http.MultipartFile.fromBytes(
+        'profilePicture', // คีย์สำหรับไฟล์ภาพ
+        _imageBytes!, // ไบต์ของภาพ
+        filename: _image!.path.split('/').last, // ชื่อไฟล์เดิม
+        contentType: MediaType('image', 'jpeg'), // ตั้งค่าประเภทเนื้อหาสำหรับภาพ
+      ));
     }
-  }
 
-  Future<void> _register() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true; // Show loading state
-      });
+    try {
+      final response = await request.send(); // ส่งคำขอ
 
-      // Prepare the request
-      final uri = Uri.parse('$url/register/users'); // Update to your API URL
-      final request = http.MultipartRequest('POST', uri);
-
-      // Add text fields
-      request.fields['Name'] =
-          _name ?? ''; // Assuming you have a variable _name
-      request.fields['email'] = _email ?? ''; // Email
-      request.fields['address'] = _address ?? ''; // Address
-      request.fields['password'] = _password ?? ''; // Password
-      request.fields['phoneNumber'] = _phoneNumber ?? ''; // Phone Number
-
-      // Add image file if selected
-      if (_imageBytes != null) {
-        request.files.add(http.MultipartFile.fromBytes(
-          'profilePicture', // The key for the image file
-          _imageBytes!, // The image bytes
-          filename: _image!.path.split('/').last, // Original filename
-          contentType:
-              MediaType('image', 'jpeg'), // Set content type for the image
-        ));
-      }
-
-      try {
-        final response = await request.send(); // Send the request
-
-        // Handle the response
-        if (response.statusCode == 201) {
-          // Check if the registration was successful
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("ลงทะเบียนสำเร็จ")),
-          );
-          Get.to(() => Login());
-        } else {
-          final responseData =
-              await response.stream.bytesToString(); // Get response body
-          log(responseData);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("เกิดข้อผิดพลาด: $responseData")),
-          );
-        }
-      } catch (e) {
-        // Handle exceptions
+      // จัดการกับการตอบกลับ
+      if (response.statusCode == 201) {
+        // ตรวจสอบว่าการลงทะเบียนสำเร็จหรือไม่
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์")),
+          const SnackBar(content: Text("ลงทะเบียนสำเร็จ")),
         );
-      } finally {
-        setState(() {
-          _isLoading = false; // Hide loading state
-        });
+        Get.to(() => Login());
+      } else {
+        final responseData = await response.stream.bytesToString(); // รับข้อมูลการตอบกลับ
+        log(responseData);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("เกิดข้อผิดพลาด: $responseData")),
+        );
       }
+    } catch (e) {
+      // จัดการข้อยกเว้น
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์")),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false; // ซ่อนสถานะการโหลด
+      });
     }
   }
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -426,6 +465,31 @@ class _RegisteruState extends State<Registeru> {
                             RegExp(r'\s')), // ป้องกันไม่ให้มีช่องว่าง
                       ],
                     ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      decoration: const InputDecoration(
+                        labelText: 'Address',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLength:
+                          100, // จำกัดที่ 100 ตัวอักษร (ปรับตามความจำเป็น)
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'กรุณากรอกที่อยู่'; // ต้องกรอก
+                        }
+                        if (value.contains(' ')) {
+                          return 'ห้ามมีช่องว่าง'; // ไม่อนุญาตให้มีช่องว่าง
+                        }
+                        return null;
+                      },
+                      onChanged: (value) {
+                        _manualAddress = value; // เก็บที่อยู่ที่กรอกด้วยตนเอง
+                      },
+                      inputFormatters: [
+                        FilteringTextInputFormatter.deny(
+                            RegExp(r'\s')), // ป้องกันช่องว่าง
+                      ],
+                    ),
 
                     const SizedBox(height: 16),
                     SizedBox(
@@ -485,12 +549,13 @@ class _RegisteruState extends State<Registeru> {
                               'asset/images/Gps.png',
                               width: 24,
                               height: 24,
+                              color: Colors.white,
                             ),
                             const SizedBox(width: 8),
                             const Text(
                               'GPS Coordinates',
                               style: TextStyle(
-                                color: Colors.grey,
+                                color: Colors.white,
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -501,19 +566,17 @@ class _RegisteruState extends State<Registeru> {
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
+                      controller: _addressController, // ใช้คอนโทรลเลอร์ที่นี่
                       decoration: const InputDecoration(
-                        labelText: 'Address',
+                        labelText: 'Pick up location',
                         border: OutlineInputBorder(),
                       ),
-                      maxLines: 2, // Allow multiple lines
+                      maxLines: 2, // อนุญาตให้มีหลายบรรทัด
                       readOnly:
-                          true, // Make the field read-only, since the address is fetched automatically
-                      controller: TextEditingController(
-                          text:
-                              _address), // Use a TextEditingController to set the address dynamically
+                          true, // ทำให้ฟิลด์เป็นอ่านอย่างเดียว เนื่องจากที่อยู่ถูกดึงมาโดยอัตโนมัติ
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'กรุณากรอกที่อยู่';
+                          return 'กรุณากรอกที่อยู่'; // "กรุณากรอกที่อยู่"
                         }
                         return null;
                       },
@@ -523,9 +586,25 @@ class _RegisteruState extends State<Registeru> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _register, // Handle registration
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0C1C8D),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
                         child: _isLoading
-                            ? const CircularProgressIndicator() // Show loading indicator while loading
-                            : const Text('Register'), // Register button
+                            ? const CircularProgressIndicator() // แสดง loading indicator ขณะโหลด
+                            : const Text(
+                                'Sign up',
+                                style: TextStyle(
+                                  fontSize:
+                                      16, // เปลี่ยนเป็นขนาดฟอนต์ที่เหมาะสม
+                                  color: Colors.white, // เปลี่ยนสีฟอนต์
+                                  fontWeight: FontWeight
+                                      .bold, // ปรับน้ำหนักฟอนต์ตามต้องการ
+                                ),
+                              ),
                       ),
                     ),
                   ],

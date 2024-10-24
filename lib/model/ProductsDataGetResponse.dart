@@ -22,16 +22,16 @@ class ProductsDataGetResponse {
     });
 
     factory ProductsDataGetResponse.fromJson(Map<String, dynamic> json) => ProductsDataGetResponse(
-        productsId: json["productsID"],
-        imageUrl: json["image_url"],
-        name: json["name"],
-        description: json["description"],
+        productsId: json["ProductsID"],
+        imageUrl: json["Image_URL"],
+        name: json["Name"],
+        description: json["Description"],
     );
 
     Map<String, dynamic> toJson() => {
-        "productsID": productsId,
-        "image_url": imageUrl,
-        "name": name,
-        "description": description,
+        "ProductsID": productsId,
+        "Image_URL": imageUrl,
+        "Name": name,
+        "Description": description,
     };
 }

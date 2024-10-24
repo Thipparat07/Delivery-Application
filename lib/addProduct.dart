@@ -1,10 +1,12 @@
 import 'dart:developer';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_delivery_1/Product.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:get/get.dart';
 
 void main() {
   runApp(MyApp());
@@ -78,6 +80,7 @@ Future<void> _addProduct() async {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('เพิ่มสินค้าเรียบร้อยแล้ว')),
         );
+        Get.to(() => ProductListPage());
       } else {
         log('เกิดข้อผิดพลาดในการเพิ่มสินค้า: ${response.reasonPhrase}');
         ScaffoldMessenger.of(context).showSnackBar(
