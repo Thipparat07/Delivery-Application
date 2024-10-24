@@ -2,6 +2,7 @@ import 'dart:convert'; // นำเข้าเพื่อแปลงข้อ
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_delivery_1/check_status.dart';
+import 'package:flutter_delivery_1/config/config.dart';
 import 'package:flutter_delivery_1/home_page.dart';
 import 'package:flutter_delivery_1/login.dart';
 import 'package:flutter_delivery_1/model/UesrsDataGetResponse.dart';
@@ -19,11 +20,18 @@ class Profileu extends StatefulWidget {
 class _ProfileuState extends State<Profileu> {
   int _selectedIndex = 1; // ใช้เพื่อเก็บค่าของเมนูที่เลือก
   final box = GetStorage();
+  String url = '';
+  UesrsDataGetResponse? userData; // สร้างตัวแปรเพื่อเก็บข้อมูลผู้ใช้
+
   @override
   void initState() {
     super.initState();
 
-    fetchUserData();
+    // โหลดการตั้งค่า URL ก่อน
+    Configuration.getConfig().then((config) {
+      url = config['apiEndpoint'];
+      fetchUserData(); // เรียกใช้งาน fetchUserData ในนี้
+    });
   }
 
   void _onItemTapped(int index) {
@@ -44,23 +52,29 @@ class _ProfileuState extends State<Profileu> {
         break;
       case 3:
         box.remove('userId'); // ลบ userId
-        box.remove('Name'); // ลบ userId
-        box.remove('userType'); // ลบ userId
-        Get.to(() => const Login()); // หน้าสถานะการจัดส่ง
+        box.remove('Name'); // ลบชื่อ
+        box.remove('userType'); // ลบประเภทผู้ใช้
+        Get.to(() => const Login()); // ไปยังหน้าเข้าสู่ระบบ
         break;
     }
   }
 
   // ฟังก์ชันดึงข้อมูลผู้ใช้จาก API
-  Future<UesrsDataGetResponse> fetchUserData() async {
-    int userId = GetStorage().read('userId');
-    final response =
-        await http.get(Uri.parse('http://10.0.2.2:3000/Users/$userId'));
+  Future<void> fetchUserData() async {
+    int userId = box.read('userId');
+
+    if (url.isEmpty) {
+      throw Exception('API endpoint is not set.');
+    }
+
+    final response = await http.get(Uri.parse('$url/users/$userId'));
 
     if (response.statusCode == 200) {
-      return uesrsDataGetResponseFromJson(response.body);
+      setState(() {
+        userData = uesrsDataGetResponseFromJson(response.body); // เก็บข้อมูลในตัวแปร
+      });
     } else {
-      throw Exception('Failed to load user data');
+      throw Exception('Failed to load user data: ${response.statusCode}');
     }
   }
 
@@ -107,29 +121,19 @@ class _ProfileuState extends State<Profileu> {
         ],
         toolbarHeight: 92,
       ),
-      body: FutureBuilder<UesrsDataGetResponse>(
-        future: fetchUserData(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-                child: CircularProgressIndicator()); // รอการดึงข้อมูล
-          } else if (snapshot.hasError) {
-            // แสดงข้อความข้อผิดพลาดเมื่อเกิดข้อผิดพลาด
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (snapshot.hasData) {
-            // หากได้ข้อมูลมาแล้ว แสดงข้อมูลใน UI
-            final user = snapshot.data!.user;
-            return Padding(
+      body: userData == null // ใช้ข้อมูลที่ถูกเก็บไว้
+          ? const Center(child: CircularProgressIndicator()) // รอการดึงข้อมูล
+          : Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(7),
-                    child: user.profilePicture != null &&
-                            user.profilePicture.isNotEmpty
+                    child: userData!.user.profilePicture != null &&
+                            userData!.user.profilePicture.isNotEmpty
                         ? Image.network(
-                            user.profilePicture!,
+                            userData!.user.profilePicture!,
                             width: 113,
                             height: 113,
                             fit: BoxFit.cover,
@@ -151,25 +155,19 @@ class _ProfileuState extends State<Profileu> {
                             height: 113,
                             color: Colors.grey[200],
                             child: const Center(
-                              child: Text(
-                                  'ไม่มีรูปโปร'), // แสดงข้อความเมื่อไม่มีรูปภาพ
+                              child: Text('ไม่มีรูปโปร'), // แสดงข้อความเมื่อไม่มีรูปภาพ
                             ),
                           ),
                   ),
                   const SizedBox(height: 16),
-                  _buildInfoContainer(user.name),
+                  _buildInfoContainer(userData!.user.name),
                   const SizedBox(height: 16),
-                  _buildInfoContainer(user.phoneNumber),
+                  _buildInfoContainer(userData!.user.phoneNumber),
                   const SizedBox(height: 16),
-                  _buildInfoContainer(user.email),
+                  _buildInfoContainer(userData!.user.email),
                 ],
               ),
-            );
-          } else {
-            return const Center(child: Text('No user data available'));
-          }
-        },
-      ),
+            ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         backgroundColor: const Color(0xFF214FC6),
