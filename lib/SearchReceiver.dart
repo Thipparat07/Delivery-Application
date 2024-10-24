@@ -2,17 +2,20 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_delivery_1/config/config.dart';
+import 'package:flutter_delivery_1/home_page.dart';
 import 'package:flutter_delivery_1/model/SearchphoneDataGetResponse.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:http/http.dart' as http;
 
 class ReceiverController extends GetxController {
-  var receivers = <SearchphoneDataGetResponse>[]
-      .obs; // ใช้ List<SearchphoneDataGetResponse>
+  var receivers = <SearchphoneDataGetResponse>[].obs;
   var isLoading = false.obs;
   var searchText = ''.obs;
   String url = '';
+
+  // เพิ่ม Field Sender_ID ที่อ่านจาก GetStorage
+  final int senderId = GetStorage().read('userId');
 
   @override
   void onInit() async {
@@ -20,8 +23,9 @@ class ReceiverController extends GetxController {
     try {
       final config = await Configuration.getConfig();
       url = config['apiEndpoint'];
-      log('API Endpoint: $url'); // บันทึก endpoint สำหรับการตรวจสอบ
-      // Create a debounce worker
+      log('API Endpoint: $url');
+
+      // สร้าง debounce worker
       ever(searchText, (_) => _performSearch());
     } catch (e) {
       log('Error loading configuration: $e');
@@ -41,11 +45,9 @@ class ReceiverController extends GetxController {
 
     isLoading.value = true;
     try {
-      final box = GetStorage();
-      final int userId = box.read('userId'); // Read userId from GetStorage
       final uri = Uri.parse('$url/api/receivers').replace(queryParameters: {
         'phoneNumber': searchText.value,
-        'userID': userId.toString(),
+        'userID': senderId.toString(), // ใช้ Sender_ID จาก Field
       });
 
       final response = await http.get(uri, headers: {
@@ -58,7 +60,6 @@ class ReceiverController extends GetxController {
         log('Decoded data: $decodedData');
 
         if (decodedData is List) {
-          // Check if the decoded data is a list
           receivers.value = decodedData
               .map((user) => SearchphoneDataGetResponse.fromJson(user))
               .toList();
@@ -88,7 +89,50 @@ class SearchReceiverPage extends StatelessWidget {
             ? List<String>.from(Get.arguments.map((id) => id.toString()))
             : [],
         super(key: key) {
-    log('Selected IDs: $selectedIds');
+    log('ProductsID: $selectedIds');
+  }
+  Future<void> sendOrderData(int recipientId, List<String> productsId) async {
+    // ตรวจสอบว่ามีสินค้าใน productsId หรือไม่
+    if (productsId.isEmpty) {
+      log('No products selected.');
+      Get.snackbar('Error', 'No products selected');
+      return;
+    }
+
+    // Log ข้อมูลที่สำคัญ
+    log('Sender_ID: ${receiverController.senderId}, Recipient_ID: $recipientId, Products: $productsId');
+
+    // ใช้ url จาก receiverController
+    final uri = Uri.parse('${receiverController.url}/createOrder');
+
+    // สร้างข้อมูล Body ที่จะส่งไปกับ API request
+    final body = jsonEncode({
+      'Sender_ID':
+          receiverController.senderId, // ใช้ Sender_ID จาก receiverController
+      'Recipient_ID': recipientId, // รับค่า Recipient_ID จาก receiver.userId
+      'products': productsId, // ส่งรายการ productsId ที่เลือก
+    });
+
+    try {
+      // เรียกใช้ API ด้วย method POST
+      final response = await http.post(uri,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: body);
+
+      if (response.statusCode == 200) {
+        log('Order created successfully: ${response.body}');
+        Get.snackbar('Success', 'Order created successfully');
+        Get.to(() => HomePage()); // หน้าสถานะการจัดส่ง
+      } else {
+        log('Failed to create order: ${response.statusCode}');
+        Get.snackbar('Error', 'Failed to create order');
+      }
+    } catch (error) {
+      log('Error creating order: $error');
+      Get.snackbar('Error', 'An error occurred while creating the order');
+    }
   }
 
   @override
@@ -142,28 +186,32 @@ class SearchReceiverPage extends StatelessWidget {
                   itemCount: receiverController.receivers.length,
                   itemBuilder: (context, index) {
                     final receiver = receiverController.receivers[index];
+
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 4),
                       child: ListTile(
                         leading: CircleAvatar(
                           backgroundImage: receiver.profilePicture != null &&
                                   receiver.profilePicture.isNotEmpty
-                              ? NetworkImage(
-                                  receiver.profilePicture) // Load image from URL
+                              ? NetworkImage(receiver
+                                  .profilePicture) // Load image from URL
                               : AssetImage('asset/images/default_profile.png')
                                   as ImageProvider, // Placeholder image
                         ),
-                        title: Text(receiver
-                            .name), // เข้าถึงชื่อผ่านฟิลด์ name ของ User
+                        title:
+                            Text(receiver.name), // Access name field from User
                         subtitle: Text(receiver
-                            .phoneNumber), // เข้าถึงเบอร์โทรผ่านฟิลด์ phoneNumber ของ User
-                        trailing: const Icon(Icons.arrow_forward_ios),
-                        // onTap: () {
-                        //   Get.toNamed('/order-confirmation', arguments: {
-                        //     'receiver': receiver,
-                        //     'selectedIds': selectedIds,
-                        //   });
-                        // },
+                            .phoneNumber), // Access phoneNumber from User
+                        trailing: IconButton(
+                          icon: const Icon(Icons.arrow_forward_ios),
+                          onPressed: () {
+                            // Log the receiver's id when the icon is pressed
+                            log('Recipient_ID: ${receiver.userId}');
+
+                            // เรียกใช้ sendOrderData และส่ง Sender_ID, Recipient_ID, และ productsId
+                            sendOrderData(receiver.userId, selectedIds);
+                          },
+                        ),
                       ),
                     );
                   },

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_delivery_1/home_page.dart';
 import 'package:flutter_delivery_1/login.dart';
+import 'package:flutter_delivery_1/profileU.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 
 class CheckStatus extends StatefulWidget {
   const CheckStatus({super.key});
@@ -10,7 +13,8 @@ class CheckStatus extends StatefulWidget {
 }
 
 class _CheckStatusState extends State<CheckStatus> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 2;
+  final box = GetStorage();
 
   void _onItemTapped(int index) {
     setState(() {
@@ -19,16 +23,20 @@ class _CheckStatusState extends State<CheckStatus> {
 
     switch (index) {
       case 0:
-        Get.to(() => const CheckStatus());
+        Get.to(() => HomePage()); // หน้าแรก
         break;
       case 1:
-        Get.to(() => const ()); // ระบุหน้าใหม่ที่นี่
+        Get.to(() => Profileu()); // หน้าโปรไฟล์
         break;
       case 2:
-        Get.to(() => const ());
+        Get.to(() => CheckStatus()); // หน้าสถานะการจัดส่ง
         break;
       case 3:
-      Get.to(() => const Login()); 
+        _logout();
+        // box.remove('userId'); // ลบ userId
+        // box.remove('Name'); // ลบ userId
+        // box.remove('userType'); // ลบ userId
+        // Get.to(() => const Login()); // หน้าสถานะการจัดส่ง
         break;
     }
   }
@@ -226,25 +234,65 @@ class _CheckStatusState extends State<CheckStatus> {
         unselectedItemColor: Colors.white.withOpacity(0.7),
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'หน้าหลัก',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'โปรไฟล์',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.local_shipping),
             label: 'สถานะการจัดส่ง',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.exit_to_app),
+            icon: IconButton(
+              icon: const Icon(Icons.exit_to_app),
+              onPressed: () {
+                _showLogoutDialog(context); // เรียกใช้ฟังก์ชันแสดงป็อปอัป
+              },
+            ),
             label: 'ออกจากระบบ',
           ),
         ],
       ),
     );
   }
+}
+
+void _showLogoutDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('ยืนยันการออกจากระบบ'),
+        content: Text('คุณต้องการออกจากระบบหรือไม่?'),
+        actions: <Widget>[
+          TextButton(
+            child: Text('ยกเลิก'),
+            onPressed: () {
+              Navigator.of(context).pop(); // ปิดป็อปอัปโดยไม่ทำอะไร
+            },
+          ),
+          TextButton(
+            child: Text('ตกลง'),
+            onPressed: () {
+              // ทำการออกจากระบบที่นี่
+              Navigator.of(context).pop(); // ปิดป็อปอัป
+              _logout(); // เรียกฟังก์ชันออกจากระบบ
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
+void _logout() {
+  // ฟังก์ชันออกจากระบบ
+  // ลบข้อมูลหรือเคลียร์ session, แล้วเปลี่ยนไปยังหน้า login
+  GetStorage().erase(); // ลบข้อมูลจาก GetStorage
+  Get.offAll(() => Login());
 }

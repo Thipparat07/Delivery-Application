@@ -403,21 +403,26 @@ class _ProductListPageState extends State<ProductListPage> {
         unselectedItemColor: Colors.white.withOpacity(0.7),
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'หน้าหลัก',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'โปรไฟล์',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.local_shipping),
             label: 'สถานะการจัดส่ง',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.exit_to_app),
+            icon: IconButton(
+              icon: const Icon(Icons.exit_to_app),
+              onPressed: () {
+                _showLogoutDialog(context); // เรียกใช้ฟังก์ชันแสดงป็อปอัป
+              },
+            ),
             label: 'ออกจากระบบ',
           ),
         ],
@@ -439,4 +444,39 @@ class _ProductListPageState extends State<ProductListPage> {
       ),
     );
   }
+}
+
+void _showLogoutDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('ยืนยันการออกจากระบบ'),
+        content: Text('คุณต้องการออกจากระบบหรือไม่?'),
+        actions: <Widget>[
+          TextButton(
+            child: Text('ยกเลิก'),
+            onPressed: () {
+              Navigator.of(context).pop(); // ปิดป็อปอัปโดยไม่ทำอะไร
+            },
+          ),
+          TextButton(
+            child: Text('ตกลง'),
+            onPressed: () {
+              // ทำการออกจากระบบที่นี่
+              Navigator.of(context).pop(); // ปิดป็อปอัป
+              _logout(); // เรียกฟังก์ชันออกจากระบบ
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
+void _logout() {
+  // ฟังก์ชันออกจากระบบ
+  // ลบข้อมูลหรือเคลียร์ session, แล้วเปลี่ยนไปยังหน้า login
+  GetStorage().erase(); // ลบข้อมูลจาก GetStorage
+  Get.offAll(() => Login());
 }

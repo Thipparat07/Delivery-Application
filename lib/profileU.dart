@@ -52,9 +52,9 @@ class _ProfileuState extends State<Profileu> {
         break;
       case 3:
         box.remove('userId'); // ลบ userId
-        box.remove('Name'); // ลบชื่อ
-        box.remove('userType'); // ลบประเภทผู้ใช้
-        Get.to(() => const Login()); // ไปยังหน้าเข้าสู่ระบบ
+        box.remove('Name'); // ลบ userId
+        box.remove('userType'); // ลบ userId
+        Get.to(() => const Login()); // หน้าสถานะการจัดส่ง
         break;
     }
   }
@@ -71,7 +71,8 @@ class _ProfileuState extends State<Profileu> {
 
     if (response.statusCode == 200) {
       setState(() {
-        userData = uesrsDataGetResponseFromJson(response.body); // เก็บข้อมูลในตัวแปร
+        userData =
+            uesrsDataGetResponseFromJson(response.body); // เก็บข้อมูลในตัวแปร
       });
     } else {
       throw Exception('Failed to load user data: ${response.statusCode}');
@@ -155,7 +156,8 @@ class _ProfileuState extends State<Profileu> {
                             height: 113,
                             color: Colors.grey[200],
                             child: const Center(
-                              child: Text('ไม่มีรูปโปร'), // แสดงข้อความเมื่อไม่มีรูปภาพ
+                              child: Text(
+                                  'ไม่มีรูปโปร'), // แสดงข้อความเมื่อไม่มีรูปภาพ
                             ),
                           ),
                   ),
@@ -175,21 +177,26 @@ class _ProfileuState extends State<Profileu> {
         unselectedItemColor: Colors.white.withOpacity(0.7),
         currentIndex: _selectedIndex, // เก็บสถานะเมนูที่ถูกเลือก
         onTap: _onItemTapped, // เรียกใช้ฟังก์ชันเมื่อเลือกเมนู
-        items: const [
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'หน้าหลัก',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'โปรไฟล์',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.local_shipping),
             label: 'สถานะการจัดส่ง',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.exit_to_app),
+            icon: IconButton(
+              icon: const Icon(Icons.exit_to_app),
+              onPressed: () {
+                _showLogoutDialog(context); // เรียกใช้ฟังก์ชันแสดงป็อปอัป
+              },
+            ),
             label: 'ออกจากระบบ',
           ),
         ],
@@ -233,4 +240,39 @@ class _ProfileuState extends State<Profileu> {
       ],
     );
   }
+}
+
+void _showLogoutDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('ยืนยันการออกจากระบบ'),
+        content: Text('คุณต้องการออกจากระบบหรือไม่?'),
+        actions: <Widget>[
+          TextButton(
+            child: Text('ยกเลิก'),
+            onPressed: () {
+              Navigator.of(context).pop(); // ปิดป็อปอัปโดยไม่ทำอะไร
+            },
+          ),
+          TextButton(
+            child: Text('ตกลง'),
+            onPressed: () {
+              // ทำการออกจากระบบที่นี่
+              Navigator.of(context).pop(); // ปิดป็อปอัป
+              _logout(); // เรียกฟังก์ชันออกจากระบบ
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
+void _logout() {
+  // ฟังก์ชันออกจากระบบ
+  // ลบข้อมูลหรือเคลียร์ session, แล้วเปลี่ยนไปยังหน้า login
+  GetStorage().erase(); // ลบข้อมูลจาก GetStorage
+  Get.offAll(() => Login());
 }
