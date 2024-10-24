@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:flutter_delivery_1/SearchReceiver.dart';
 import 'package:flutter_delivery_1/addProduct.dart';
 import 'package:flutter_delivery_1/config/config.dart';
 import 'package:flutter_delivery_1/model/ProductsDataGetResponse.dart';
@@ -9,7 +10,8 @@ import 'package:http/http.dart' as http;
 
 // คอนโทรลเลอร์สำหรับจัดการรายการสินค้า
 class ProductController extends GetxController {
-  var products = <ProductsDataGetResponse>[].obs; // รายการสินค้าที่เป็น Observable
+  var products =
+      <ProductsDataGetResponse>[].obs; // รายการสินค้าที่เป็น Observable
   var isLoading = true.obs; // สถานะการโหลดที่เป็น Observable
   var selectedProducts =
       <ProductsDataGetResponse>[].obs; // รายการสินค้าที่เลือกเป็น Observable
@@ -30,15 +32,17 @@ class ProductController extends GetxController {
   Future<void> fetchProducts() async {
     try {
       log(url);
-      final response =
-          await http.get(Uri.parse('https://api-delivery-application.vercel.app/api/products'));
+      final response = await http.get(Uri.parse(
+          'https://api-delivery-application.vercel.app/api/products'));
 
       if (response.statusCode == 200) {
         List<dynamic> data = jsonDecode(response.body);
-        products.value =
-            data.map((productJson) => ProductsDataGetResponse.fromJson(productJson)).toList();
+        products.value = data
+            .map((productJson) => ProductsDataGetResponse.fromJson(productJson))
+            .toList();
       } else if (response.statusCode >= 500) {
-        Get.snackbar('Server Error', 'ไม่สามารถดึงข้อมูลได้ โปรดลองใหม่อีกครั้ง');
+        Get.snackbar(
+            'Server Error', 'ไม่สามารถดึงข้อมูลได้ โปรดลองใหม่อีกครั้ง');
       } else if (response.statusCode >= 400) {
         Get.snackbar('Error', 'ไม่สามารถดึงข้อมูลสินค้าได้ กรุณาตรวจสอบข้อมูล');
       }
@@ -80,11 +84,15 @@ class ProductListPage extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.check),
             onPressed: () {
-              // จัดการสินค้าที่เลือก
               final selected = productController.selectedProducts;
-              // ทำอะไรบางอย่างกับสินค้าที่เลือก เช่น ไปยังหน้าถัดไป
-              log('สินค้าที่เลือก: ${selected.map((p) => p.name).join(', ')}');
-              log('ID สินค้าที่เลือก: ${selected.map((p) => p.productsId).join(', ')}');
+              if (selected.isNotEmpty) {
+                // Send only the IDs to SearchReceiverPage
+                final selectedIds =
+                    selected.map((product) => product.productsId).toList();
+                Get.to(() => SearchReceiverPage(), arguments: selectedIds);
+              } else {
+                Get.snackbar('Error', 'กรุณาเลือกสินค้าก่อน');
+              }
             },
           ),
           ElevatedButton(
@@ -105,7 +113,8 @@ class ProductListPage extends StatelessWidget {
           itemCount: productController.products.length,
           itemBuilder: (context, index) {
             final product = productController.products[index];
-            final isSelected = productController.isSelected(product); // ตรวจสอบว่าสินค้าถูกเลือกหรือไม่
+            final isSelected = productController
+                .isSelected(product); // ตรวจสอบว่าสินค้าถูกเลือกหรือไม่
 
             return Card(
               elevation: 4,
@@ -134,8 +143,8 @@ class ProductListPage extends StatelessWidget {
                           value: productController.isSelected(
                               product), // ตั้งค่าสถานะกล่องเช็คตามการเลือกสินค้า
                           onChanged: (value) {
-                            productController
-                                .toggleSelection(product); // สลับสถานะการเลือกสินค้า
+                            productController.toggleSelection(
+                                product); // สลับสถานะการเลือกสินค้า
                           },
                         )),
                   ],
@@ -148,14 +157,40 @@ class ProductListPage extends StatelessWidget {
     );
   }
 
-  // วิดเจ็ตสำหรับจัดการการแสดงภาพสินค้า
   Widget buildProductImage(String imageUrl) {
     return Image.network(
       imageUrl,
       width: 50,
       height: 50,
       fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => Icon(Icons.broken_image), // แสดงไอคอนถ้าภาพไม่สามารถโหลดได้
+      errorBuilder: (context, error, stackTrace) {
+        // เพิ่ม log เพื่อดู error
+        print('Error loading image: $error');
+        return Container(
+          width: 50,
+          height: 50,
+          color: Colors.grey[200],
+          child: Icon(
+            Icons.broken_image,
+            color: Colors.grey[400],
+          ),
+        );
+      },
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Container(
+          width: 50,
+          height: 50,
+          child: Center(
+            child: CircularProgressIndicator(
+              value: loadingProgress.expectedTotalBytes != null
+                  ? loadingProgress.cumulativeBytesLoaded /
+                      loadingProgress.expectedTotalBytes!
+                  : null,
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -169,30 +204,38 @@ class ProductDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(product.name),
-      ),
-      body: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Image.network(product.imageUrl),
-            SizedBox(height: 16),
-            Text(
-              product.name,
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Text(
-              product.description,
-              style: TextStyle(fontSize: 16),
-            ),
-          ],
+        appBar: AppBar(
+          title: Text(product.name),
         ),
-      ),
-    );
+        body: Container(
+          height: 200, // หรือขนาดที่ต้องการ
+          child: Image.network(
+            product.imageUrl,
+            errorBuilder: (context, error, stackTrace) {
+              print('Error loading detail image: $error');
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.broken_image, size: 50),
+                    SizedBox(height: 8),
+                    Text('ไม่สามารถโหลดรูปภาพได้'),
+                  ],
+                ),
+              );
+            },
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Center(
+                child: CircularProgressIndicator(
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                      : null,
+                ),
+              );
+            },
+          ),
+        ));
   }
 }
-
-
