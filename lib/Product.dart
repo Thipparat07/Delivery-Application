@@ -93,7 +93,9 @@ class _ProductListPageState extends State<ProductListPage> {
   final box = GetStorage();
   int userId = GetStorage().read('userId');
   String Name = GetStorage().read('Name');
+
   String userType = GetStorage().read('userType');
+
 
   void _onItemTapped(int index) {
     setState(() {
@@ -120,8 +122,10 @@ class _ProductListPageState extends State<ProductListPage> {
     }
   }
 
+ 
   @override
   Widget build(BuildContext context) {
+     log('Building ProductListPage, Name: $Name'); // Log the name to debug
     return Scaffold(
       body: Obx(() {
         if (productController.isLoading.value) {
@@ -175,9 +179,9 @@ class _ProductListPageState extends State<ProductListPage> {
                           color: Colors.white,
                         ),
                       ),
-                      const Text(
-                        'Phuri Ngomsaraku', // ชื่อผู้ใช้
-                        style: TextStyle(
+                      Text(
+                        Name.isNotEmpty ? Name : 'ผู้ใช้', // ชื่อผู้ใช้
+                        style: const TextStyle(
                           fontSize: 12,
                           color: Colors.white,
                         ),

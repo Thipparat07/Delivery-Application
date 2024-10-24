@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:flutter_delivery_1/config/config.dart';
 import 'package:flutter_delivery_1/model/SearchphoneDataGetResponse.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -11,12 +12,21 @@ class ReceiverController extends GetxController {
       .obs; // ใช้ List<SearchphoneDataGetResponse>
   var isLoading = false.obs;
   var searchText = ''.obs;
+  String url = '';
 
   @override
-  void onInit() {
+  void onInit() async {
     super.onInit();
-    // Create a debounce worker
-    ever(searchText, (_) => _performSearch());
+    try {
+      final config = await Configuration.getConfig();
+      url = config['apiEndpoint'];
+      log('API Endpoint: $url'); // บันทึก endpoint สำหรับการตรวจสอบ
+      // Create a debounce worker
+      ever(searchText, (_) => _performSearch());
+    } catch (e) {
+      log('Error loading configuration: $e');
+      Get.snackbar('Error', 'ไม่สามารถโหลดการกำหนดค่าได้');
+    }
   }
 
   void updateSearch(String value) {
@@ -33,7 +43,7 @@ class ReceiverController extends GetxController {
     try {
       final box = GetStorage();
       final int userId = box.read('userId'); // Read userId from GetStorage
-      final uri = Uri.parse('http://10.0.2.2:3000/api/receivers')
+      final uri = Uri.parse('$url/api/receivers')
           .replace(queryParameters: {
         'phoneNumber': searchText.value,
         'userID': userId.toString(),
