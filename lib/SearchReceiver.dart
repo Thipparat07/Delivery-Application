@@ -43,8 +43,7 @@ class ReceiverController extends GetxController {
     try {
       final box = GetStorage();
       final int userId = box.read('userId'); // Read userId from GetStorage
-      final uri = Uri.parse('$url/api/receivers')
-          .replace(queryParameters: {
+      final uri = Uri.parse('$url/api/receivers').replace(queryParameters: {
         'phoneNumber': searchText.value,
         'userID': userId.toString(),
       });
@@ -146,8 +145,13 @@ class SearchReceiverPage extends StatelessWidget {
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 4),
                       child: ListTile(
-                        leading: const CircleAvatar(
-                          child: Icon(Icons.person),
+                        leading: CircleAvatar(
+                          backgroundImage: receiver.profilePicture != null &&
+                                  receiver.profilePicture.isNotEmpty
+                              ? NetworkImage(
+                                  receiver.profilePicture) // Load image from URL
+                              : AssetImage('asset/images/default_profile.png')
+                                  as ImageProvider, // Placeholder image
                         ),
                         title: Text(receiver
                             .name), // เข้าถึงชื่อผ่านฟิลด์ name ของ User

@@ -14,7 +14,7 @@ class SearchphoneDataGetResponse {
     String email;
     String password;
     String name;
-    dynamic profilePicture;
+    String profilePicture;
     String address;
     String gpsLocation;
     dynamic vehicleRegistration;
