@@ -5,6 +5,7 @@ import 'package:flutter_delivery_1/app_cover.dart';
 import 'package:flutter_delivery_1/check_status.dart';
 import 'package:flutter_delivery_1/login.dart';
 import 'package:flutter_delivery_1/map_realtime.dart';
+import 'package:flutter_delivery_1/model/home_rider.dart';
 import 'package:flutter_delivery_1/registerR.dart';
 import 'package:flutter_delivery_1/registerU.dart';
 import 'package:get/get.dart';
@@ -30,7 +31,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: AddProductPage(),
+      home: HomeRider(),
     );
   }
 }
