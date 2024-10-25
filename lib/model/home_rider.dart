@@ -32,7 +32,7 @@ class _HomeRiderState extends State<HomeRider> {
         break;
       case 2:
         // ถ้าคุณต้องการออกจากระบบ
-        box.remove('userId'); // ลบ userId
+        box.remove('userId'); 
         box.remove('Name'); // ลบ Name
         box.remove('userType'); // ลบ userType
         Get.to(() => const Login()); // นำไปที่หน้า Login
